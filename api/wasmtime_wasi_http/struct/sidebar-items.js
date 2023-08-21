@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["ActiveFields","ActiveFuture","ActiveRequest","ActiveResponse","Stream","WasiHttpCtx"],"trait":["HttpFields","HttpRequest","HttpResponse","TableHttpExt","WasiHttpView"],"type":["FieldsMap"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["drop_terminal_output"],"type":["TerminalOutput"]};

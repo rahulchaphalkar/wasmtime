@@ -1,0 +1,3 @@
+(function() {var implementors = {
+"wasmtime_wasi":[["impl IsTerminal for <a class=\"struct\" href=\"wasmtime_wasi/preview2/struct.Stdout.html\" title=\"struct wasmtime_wasi::preview2::Stdout\">Stdout</a>"],["impl IsTerminal for <a class=\"enum\" href=\"wasmtime_wasi/preview2/enum.Stdin.html\" title=\"enum wasmtime_wasi::preview2::Stdin\">Stdin</a>"],["impl IsTerminal for <a class=\"struct\" href=\"wasmtime_wasi/preview2/struct.Stderr.html\" title=\"struct wasmtime_wasi::preview2::Stderr\">Stderr</a>"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
