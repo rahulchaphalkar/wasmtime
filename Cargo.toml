@@ -275,7 +275,7 @@ component-model = [
 ]
 winch = ["wasmtime/winch"]
 wmemcheck = ["wasmtime/wmemcheck"]
-
+c-api-vtune = []
 [[test]]
 name = "host_segfault"
 harness = false
