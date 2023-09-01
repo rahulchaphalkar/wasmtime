@@ -180,11 +180,10 @@ impl Config {
             compiler_config: CompilerConfig::default(),
             #[cfg(feature = "cache")]
             cache_config: CacheConfig::new_cache_disabled(),
-            #[cfg(feature = "c-api-vtune")]
+            #[cfg(C_API_VTUNE)]
             profiling_strategy: ProfilingStrategy::VTune,
-            #[cfg(not(feature = "c-api-vtune"))]
+            #[cfg(not(C_API_VTUNE))]
             profiling_strategy: ProfilingStrategy::None,
-            //profiling_strategy: ProfilingStrategy::VTune,
             mem_creator: None,
             allocation_strategy: InstanceAllocationStrategy::OnDemand,
             // 512k of stack -- note that this is chosen currently to not be too
