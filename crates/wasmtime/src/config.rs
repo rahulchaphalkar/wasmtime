@@ -184,7 +184,6 @@ impl Config {
             profiling_strategy: ProfilingStrategy::VTune,
             #[cfg(not(feature = "c-api-vtune"))]
             profiling_strategy: ProfilingStrategy::None,
-            //profiling_strategy: ProfilingStrategy::VTune,
             mem_creator: None,
             allocation_strategy: InstanceAllocationStrategy::OnDemand,
             // 512k of stack -- note that this is chosen currently to not be too

@@ -72,6 +72,11 @@ default = [
   'vtune',
 ]
 c-api-vtune = []
+#[target.'cfg(c-api-vtune = "true")'.dependencies]
+#workspace = true
+#features = [
+#  "c-api-vtune",
+#]
 # An on-by-default feature enabling runtime compilation of WebAssembly modules
 # with the Cranelift compiler. Cranelift is the default compilation backend of
 # Wasmtime. If disabled then WebAssembly modules can only be created from

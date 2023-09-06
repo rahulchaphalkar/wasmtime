@@ -20,6 +20,9 @@ doctest = false
 env_logger = { workspace = true }
 anyhow = { workspace = true }
 once_cell = { workspace = true }
+[target.'cfg(feature = "c-api-vtune")'.dependencies]
+wasmtime = { workspace = true, features = ['cranelift','c-api-vtune'] }
+[target.'cfg(not(feature = "c-api-vtune"))'.dependencies]
 wasmtime = { workspace = true, features = ['cranelift'] }
 wasmtime-c-api-macros = { path = "macros" }
 
@@ -38,3 +41,10 @@ jitdump = ["wasmtime/jitdump"]
 cache = ["wasmtime/cache"]
 parallel-compilation = ['wasmtime/parallel-compilation']
 wasi = ['wasi-cap-std-sync', 'wasmtime-wasi', 'cap-std', 'wasi-common']
+
+c-api-vtune = ['wasmtime/c-api-vtune']
+[target.'cfg(c-api-vtune = "true")'.dependencies.wasmtime]
+workspace = true
+features = [
+  "c-api-vtune",
+]
