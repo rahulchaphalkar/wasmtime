@@ -41,7 +41,7 @@ concurrency:
 
 jobs:
   # Check VTune Profiler functionality
-  vtune_test
+  vtune_test:
     name: VTune Test
     runs-on: ubuntu-latest
     steps:
