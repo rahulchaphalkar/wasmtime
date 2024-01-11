@@ -25,6 +25,9 @@ on:
     # tag at the end of CI if successful and the tag will trigger the artifact
     # uploads as well as publication to crates.io.
     - 'release-*'
+  
+  # Manually trigger workflow
+  workflow_dispatch
 
 defaults:
   run:
