@@ -37,6 +37,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Check VTune Profiler functionality
+  vtune_test
+    name: VTune Test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: abrown/install-vtune-action@422bb78743d724527974d5353dcfa423a8d1d303
+    - run: vtune -collect hotspots -result-dir=/tmp/vtune-results sleep 1
+
   # Check Code style quickly by running `rustfmt` over all code
   rustfmt:
     name: Rustfmt
