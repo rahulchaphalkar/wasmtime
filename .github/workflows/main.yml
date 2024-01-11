@@ -27,7 +27,7 @@ on:
     - 'release-*'
   
   # Manually trigger workflow
-  workflow_dispatch
+  workflow_dispatch:
 
 defaults:
   run:
