@@ -112,6 +112,31 @@ fn check_openvino_artifacts_are_available() -> Result<()> {
     Ok(())
 }
 
+fn check_pytorch_artifacts_are_available() -> Result<()> {
+    let _exclusively_retrieve_artifacts = ARTIFACTS.lock().unwrap();
+    const BASE_URL: &str =
+        "https://github.com/intel/openvino-rs/raw/main/crates/openvino/tests/fixtures/mobilenet";
+    let artifacts_dir = artifacts_dir();
+    if !artifacts_dir.is_dir() {
+        fs::create_dir(&artifacts_dir)?;
+    }
+    for (from, to) in [
+        ("mobilenet.bin", "model.bin"),
+        ("mobilenet.xml", "model.xml"),
+        ("tensor-1x224x224x3-f32.bgr", "tensor.bgr"),
+    ] {
+        let remote_url = [BASE_URL, from].join("/");
+        let local_path = artifacts_dir.join(to);
+        if !local_path.is_file() {
+            download(&remote_url, &local_path)
+                .with_context(|| "unable to retrieve test artifact")?;
+        } else {
+            println!("> using cached artifact: {}", local_path.display())
+        }
+    }
+    Ok(())
+}
+
 #[cfg(all(feature = "winml", target_os = "windows"))]
 fn check_winml_is_available() -> Result<()> {
     match std::panic::catch_unwind(|| {

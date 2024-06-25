@@ -1,0 +1,2 @@
+[env]
+LIBTORCH = "/home/rahul/repos/pytorch_bindings/libtorch"

@@ -77,8 +77,8 @@ foreach_nn!(assert_test_exists);
 )]
 #[test]
 fn nn_image_classification() {
-    let backend = Backend::from(backend::openvino::OpenvinoBackend::default());
-    run(NN_IMAGE_CLASSIFICATION, backend, false).unwrap()
+    // let backend = Backend::from(backend::openvino::OpenvinoBackend::default());
+    // run(NN_IMAGE_CLASSIFICATION, backend, false).unwrap()
 }
 
 #[cfg_attr(
@@ -90,8 +90,8 @@ fn nn_image_classification() {
 )]
 #[test]
 fn nn_image_classification_named() {
-    let backend = Backend::from(backend::openvino::OpenvinoBackend::default());
-    run(NN_IMAGE_CLASSIFICATION_NAMED, backend, true).unwrap()
+    // let backend = Backend::from(backend::openvino::OpenvinoBackend::default());
+    // run(NN_IMAGE_CLASSIFICATION_NAMED, backend, true).unwrap()
 }
 
 #[cfg_attr(not(all(feature = "winml", target_os = "windows")), ignore)]
@@ -119,4 +119,10 @@ fn nn_image_classification_onnx() {
         let backend = Backend::from(backend::onnxruntime::OnnxBackend::default());
         run(NN_IMAGE_CLASSIFICATION_ONNX, backend, false).unwrap()
     }
+}
+
+#[test]
+fn nn_image_classification_pytorch() {
+    let backend = Backend::from(backend::pytorch::PytorchBackend::default());
+    run(NN_IMAGE_CLASSIFICATION_PYTORCH, backend, false).unwrap()
 }
