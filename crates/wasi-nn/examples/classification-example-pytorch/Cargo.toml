@@ -8,8 +8,10 @@ publish = false
 
 [dependencies]
 wasi-nn = "0.6.0"
-
-
+# wit-bindgen = "0.29.0"
+anyhow = "1.0.86"
+image = { version = "0.25.2", default-features = false, features = ["png"] }
+# wasmtime-wasi-nn = "23.0.2"
 # This crate is built with the wasm32-wasi target, so it's separate
 # from the main Wasmtime build, so use this directive to exclude it
 # from the parent directory's workspace.
