@@ -3,8 +3,9 @@ use std::path::Path;
 use std::process::Command;
 
 fn main() {
+    println!("cargo:rustc-link-arg=-Wl,--unresolved-symbols=ignore-in-shared-libs");
     println!("cargo:rerun-if-changed=build.rs");
-
+    //println!("cargo:rustc-link-arg=-Wl,-rpath,/home/rahul/tools/fake/faker");
     set_commit_info_for_rustc();
 }
 

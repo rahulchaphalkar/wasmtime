@@ -343,8 +343,8 @@ default = [
 
   # On-by-default WASI features
   "wasi-nn",
-  "wasi-threads",
-  "wasi-http",
+  # "wasi-threads",
+  # "wasi-http",
 
   # Most features of Wasmtime are enabled by default.
   "wat",

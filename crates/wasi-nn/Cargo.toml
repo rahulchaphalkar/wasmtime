@@ -27,10 +27,11 @@ tracing = { workspace = true }
 thiserror = { workspace = true }
 openvino = { version = "0.6.0", features = [
     "runtime-linking",
-], optional = true }
+ ], optional = true }
 
 ort = { version = "2.0.0-rc.0", default-features = false, features = ["copy-dylibs", "download-binaries"], optional = true }
-tch = { version = "0.17.0", optional = true}
+# tch = { version = "0.17.0", optional = true}
+tch = { path = "/home/rahul/repos/pytorch-bindings/tch-rs", optional = true }
 
 [target.'cfg(windows)'.dependencies.windows]
 version = "0.52"
