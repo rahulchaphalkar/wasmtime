@@ -120,3 +120,12 @@ fn nn_image_classification_onnx() {
         run(NN_IMAGE_CLASSIFICATION_ONNX, backend, false).unwrap()
     }
 }
+
+#[test]
+fn nn_image_classification_pytorch() {
+    #[cfg(feature = "pytorch")]
+    {
+        let backend = Backend::from(backend::pytorch::PytorchBackend::default());
+        run(NN_IMAGE_CLASSIFICATION_PYTORCH, backend, false).unwrap()
+    }
+}

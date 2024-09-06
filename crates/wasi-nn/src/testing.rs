@@ -62,6 +62,11 @@ pub fn check() -> Result<()> {
     {
         check_winml_is_available()?;
     }
+
+    #[cfg(feature = "pytorch")]
+    {
+        check_pytorch_artifacts_are_available()?;
+    }
     Ok(())
 }
 
@@ -109,6 +114,32 @@ fn check_openvino_artifacts_are_available() -> Result<()> {
             println!("> using cached artifact: {}", local_path.display())
         }
     }
+    Ok(())
+}
+
+fn check_pytorch_artifacts_are_available() -> Result<()> {
+    let _exclusively_retrieve_artifacts = ARTIFACTS.lock().unwrap();
+    let artifacts_dir = artifacts_dir();
+    if !artifacts_dir.is_dir() {
+        fs::create_dir(&artifacts_dir)?;
+    }
+
+    // Copy preprocessed image tensor from source tree to artifact directory.
+    let image_path = env::current_dir()?
+        .join("tests")
+        .join("fixtures")
+        .join("kitten.tensor");
+    let dest_path = artifacts_dir.join("kitten.tensor");
+    fs::copy(&image_path, &dest_path)?;
+
+    // Copy Resnet18 model from source tree to artifact directory.
+    let image_path = env::current_dir()?
+        .join("tests")
+        .join("fixtures")
+        .join("resnet.pt");
+    let dest_path = artifacts_dir.join("model.pt");
+    fs::copy(&image_path, &dest_path)?;
+
     Ok(())
 }
 
