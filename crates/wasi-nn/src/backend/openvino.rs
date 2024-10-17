@@ -20,36 +20,78 @@ impl BackendInner for OpenvinoBackend {
     }
 
     fn load(&mut self, builders: &[&[u8]], target: ExecutionTarget) -> Result<Graph, BackendError> {
-        if builders.len() != 2 {
-            return Err(BackendError::InvalidNumberOfBuilders(2, builders.len()).into());
+        // (2x LLM) + (2x Tokenizer) + (2x Detokenizer) + (1x SharedObj Extension) = 7 expected for LLM
+        println!("buf len {:?}", builders.len());
+        if builders.len() < 2 || builders.len() > 3{
+            return Err(BackendError::InvalidNumberOfBuilders(3, builders.len()).into());
         }
         // Construct the context if none is present; this is done lazily (i.e.
         // upon actually loading a model) because it may fail to find and load
         // the OpenVINO libraries. The laziness limits the extent of the error
         // only to wasi-nn users, not all WASI users.
         if self.0.is_none() {
+            println!("New core");
             self.0.replace(openvino::Core::new()?);
+            println!("New core done");
         }
-        // Read the guest array.
-        let xml = builders[0];
-        let weights = builders[1];
+        else {
+            println!("Using existing core");
+        }
 
+        let core = self
+        .0
+        .as_mut()
+        .expect("openvino::Core was previously constructed");
+        // Add extension
+        if builders.len() > 2 {
+            core.add_extension(std::str::from_utf8(builders[2]).unwrap())?;
+            println!("created extension");
+        }
+
+        // Read the guest array.
+        let llm_xml = builders[0];
+        let llm_weights = builders[1];
+        println!("read 2 builders");
         // Construct a new tensor for the model weights.
-        let shape = Shape::new(&[1, weights.len() as i64])?;
+        let shape = Shape::new(&[1, llm_weights.len() as i64])?;
         let mut weights_tensor = OvTensor::new(ElementType::U8, &shape)?;
         let buffer = weights_tensor.get_raw_data_mut()?;
-        buffer.copy_from_slice(&weights);
-
+        buffer.copy_from_slice(&llm_weights);
+        println!("weight buffer created");
         // Construct OpenVINO graph structures: `model` contains the graph
         // structure, `compiled_model` can perform inference.
-        let core = self
-            .0
-            .as_mut()
-            .expect("openvino::Core was previously constructed");
-        let model = core.read_model_from_buffer(&xml, Some(&weights_tensor))?;
-        let compiled_model = core.compile_model(&model, target.into())?;
+
+        let llm_model = core.read_model_from_buffer(&llm_xml, Some(&weights_tensor))?;
+        println!("read model done");
+        let llm_compiled_model = core.compile_model(&llm_model, target.into())?;
+        println!("compiled model");
+/*
+        // tokenizer processing
+        let tokenizer_xml = builders[3];
+        let tokenizer_weights = builders[4];
+        // Construct a new tensor for the model weights.
+        let shape = Shape::new(&[1, tokenizer_weights.len() as i64])?;
+        let mut weights_tensor = OvTensor::new(ElementType::U8, &shape)?;
+        let tokenizer_buffer = weights_tensor.get_raw_data_mut()?;
+        tokenizer_buffer.copy_from_slice(&tokenizer_weights);
+        let tokenizer_model = core.read_model_from_buffer(&tokenizer_xml, Some(&weights_tensor))?;
+        let tokenizer_compiled_model = core.compile_model(&tokenizer_model, target.into())?;
+
+        // detokenizer processing
+        let detokenizer_xml = builders[5];
+        let detokenizer_weights = builders[6];
+        // Construct a new tensor for the model weights.
+        let shape = Shape::new(&[1, detokenizer_weights.len() as i64])?;
+        let mut weights_tensor = OvTensor::new(ElementType::U8, &shape)?;
+        let detokenizer_buffer = weights_tensor.get_raw_data_mut()?;
+        detokenizer_buffer.copy_from_slice(&detokenizer_weights);
+        let detokenizer_model = core.read_model_from_buffer(&detokenizer_xml, Some(&weights_tensor))?;
+        let detokenizer_compiled_model = core.compile_model(&detokenizer_model, target.into())?;
+*/
         let box_: Box<dyn BackendGraph> =
-            Box::new(OpenvinoGraph(Arc::new(Mutex::new(compiled_model))));
+            Box::new(OpenvinoGraph{
+                llm_compiled_model: Arc::new(Mutex::new(llm_compiled_model)),
+            });
         Ok(box_.into())
     }
 
@@ -70,17 +112,22 @@ impl BackendFromDir for OpenvinoBackend {
     }
 }
 
-struct OpenvinoGraph(Arc<Mutex<openvino::CompiledModel>>);
+struct OpenvinoGraph {
+    llm_compiled_model: Arc<Mutex<openvino::CompiledModel>>,
+}
 
 unsafe impl Send for OpenvinoGraph {}
 unsafe impl Sync for OpenvinoGraph {}
 
 impl BackendGraph for OpenvinoGraph {
     fn init_execution_context(&self) -> Result<ExecutionContext, BackendError> {
-        let mut compiled_model = self.0.lock().unwrap();
+        let mut compiled_model = self.llm_compiled_model.lock().unwrap();
         let infer_request = compiled_model.create_infer_request()?;
+
         let box_: Box<dyn BackendExecutionContext> =
-            Box::new(OpenvinoExecutionContext(infer_request));
+            Box::new(OpenvinoExecutionContext(
+                infer_request
+            ));
         Ok(box_.into())
     }
 }
@@ -98,11 +145,17 @@ impl BackendExecutionContext for OpenvinoExecutionContext {
             .collect::<Vec<_>>();
         let shape = Shape::new(&dimensions)?;
         let mut new_tensor = OvTensor::new(precision, &shape)?;
-        let buffer = new_tensor.get_raw_data_mut()?;
-        buffer.copy_from_slice(&tensor.data);
+        if precision == ElementType::String {
+            new_tensor.set_string_data(&std::str::from_utf8(&tensor.data).unwrap()).unwrap();
+        }
+        else {
+            let buffer = new_tensor.get_raw_data_mut()?;
+            //let buffer = new_tensor.get_data_mut::<i32>()?;
+            buffer.copy_from_slice(&tensor.data);
+        }
         // Assign the tensor to the request.
         match id {
-            Id::Index(i) => self.0.set_input_tensor_by_index(i as usize, &new_tensor)?,
+            Id::Index(i) => {if i>99 {let name = convert_index_to_name(i);self.0.set_tensor(&name, &new_tensor)?} else {self.0.set_input_tensor_by_index(i as usize, &new_tensor)?}},//self.0.set_input_tensor_by_index(i as usize, &new_tensor)?,
             Id::Name(name) => self.0.set_tensor(&name, &new_tensor)?,
         };
         Ok(())
@@ -115,23 +168,39 @@ impl BackendExecutionContext for OpenvinoExecutionContext {
 
     fn get_output(&mut self, id: Id) -> Result<Tensor, BackendError> {
         let output_name = match id {
-            Id::Index(i) => self.0.get_output_tensor_by_index(i as usize)?,
+            Id::Index(i) => {println!("Index is {:?}",i); if i>99 {let name = convert_index_to_name(i);self.0.get_tensor(name.as_str())?} else {self.0.get_output_tensor_by_index(i as usize)?}},//self.0.get_output_tensor_by_index(i as usize)?,
             Id::Name(name) => self.0.get_tensor(&name)?,
         };
+        println!("here1");
         let dimensions = output_name
             .get_shape()?
             .get_dimensions()
             .iter()
             .map(|&dim| dim as u32)
             .collect::<Vec<u32>>();
+        println!("here2");
         let ty = output_name.get_element_type()?.try_into()?;
+        println!("here3");
         let data = output_name.get_raw_data()?.to_vec();
+        println!("here4 data {:?}", data.len());
         Ok(Tensor {
             dimensions,
             ty,
             data,
         })
     }
+}
+
+fn convert_index_to_name(i: u32) -> String {
+    let name = match i {
+        100 => "input_ids",
+        101 => "attention_mask",
+        102 => "position_ids",
+        103 => "beam_idx",
+        104 => "logits",
+        _ => unimplemented!("error"),
+    };
+    name.to_string()
 }
 
 impl From<InferenceError> for BackendError {
@@ -160,12 +229,15 @@ impl From<ExecutionTarget> for DeviceType<'static> {
     }
 }
 
+// Todo - Add string tensor type to wit/witx. For now, replace Fp16 with string
+
+
 /// Return OpenVINO's precision type for the `TensorType` enum provided by
 /// wasi-nn.
 impl From<TensorType> for ElementType {
     fn from(tensor_type: TensorType) -> Self {
         match tensor_type {
-            TensorType::Fp16 => ElementType::F16,
+            TensorType::Fp16 => ElementType::String,
             TensorType::Fp32 => ElementType::F32,
             TensorType::Fp64 => ElementType::F64,
             TensorType::U8 => ElementType::U8,

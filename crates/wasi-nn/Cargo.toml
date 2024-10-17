@@ -30,9 +30,10 @@ wasmtime = { workspace = true, features = [
 # These dependencies are necessary for the wasi-nn implementation:
 tracing = { workspace = true }
 thiserror = { workspace = true }
-openvino = { version = "0.7.2", features = [
-    "runtime-linking",
-], optional = true }
+# openvino = { version = "0.7.2", features = [
+#     "runtime-linking",
+# ], optional = true }
+openvino = { path = "/home/oem/public_repos/openvino-rs/crates/openvino", features = ["runtime-linking"], optional = true }
 
 ort = { version = "2.0.0-rc.2", default-features = false, features = [
     "copy-dylibs",
