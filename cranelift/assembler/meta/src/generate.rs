@@ -64,7 +64,7 @@ fn generate_inst_display_impl(f: &mut Formatter, insts: &[dsl::Inst]) {
 fn generate_inst_encode_impl(f: &mut Formatter, insts: &[dsl::Inst]) {
     fmtln!(f, "impl Inst {{");
     f.indent(|f| {
-        fmtln!(f, "pub fn encode(&self, b: &mut MachBuffer<x64::Inst>) {{");
+        fmtln!(f, "pub fn encode(&self, b: &mut impl CodeSink) {{");
         f.indent(|f| {
             fmtln!(f, "match self {{");
             f.indent_push();

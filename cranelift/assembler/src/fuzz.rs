@@ -2,10 +2,15 @@
 
 use crate::Inst;
 use capstone::arch::{BuildsCapstone, BuildsCapstoneSyntax};
-use cranelift_codegen::{control::ControlPlane, MachBuffer, VCodeConstants};
 
 /// Generate a random assembly instruction and check its encoding and
 /// pretty-printing against a known-good disassembler.
+///
+/// # Panics
+///
+/// This function panics to express failure as expected by the `arbitrary`
+/// fuzzer infrastructure. It may fail during assembly, disassembly, or when
+/// comparing the disassembled strings.
 pub fn roundtrip(inst: &Inst) {
     // Check that we can actually assemble this instruction.
     let assembled = assemble(inst);
@@ -22,21 +27,14 @@ pub fn roundtrip(inst: &Inst) {
     }
 }
 
-/// See `cranelift/codegen/src/isa/x64/inst/emit_tests.rs`; this is suboptimal,
-/// though (TODO).
+/// Use this assembler to emit machine code into a byte buffer.
+///
+/// This will skip any traps or label registrations, but this is fine for the
+/// single-instruction disassembly we're doing here.
 fn assemble(insn: &Inst) -> Vec<u8> {
-    let ctrl_plane = &mut ControlPlane::default();
-    let constants = VCodeConstants::default();
-    let mut buffer = MachBuffer::new();
-
+    let mut buffer = Vec::new();
     insn.encode(&mut buffer);
-
-    // Allow one label just after the instruction (so the offset is 0).
-    let label = buffer.get_label();
-    buffer.bind_label(label, ctrl_plane);
-
-    let buffer = buffer.finish(&constants, ctrl_plane);
-    buffer.data().to_owned()
+    buffer
 }
 
 /// Building a new `Capstone` each time is suboptimal (TODO).

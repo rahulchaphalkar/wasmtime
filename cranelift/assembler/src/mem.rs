@@ -3,40 +3,37 @@
 use crate::alloc::RegallocVisitor;
 use crate::imm::Simm32;
 use crate::reg::{self, Gpr, Gpr2MinusRsp, Size};
+use crate::rex::{encode_modrm, encode_sib, Imm, RexFlags};
+use crate::sink::{CodeSink, Label, TrapCode};
 use arbitrary::Arbitrary;
-use cranelift_codegen::ir::MemFlags;
-use cranelift_codegen::isa::x64::encoding::rex::{encode_modrm, encode_sib, Imm, RexFlags};
-use cranelift_codegen::isa::x64::encoding::ByteSink;
-use cranelift_codegen::MachLabel;
 
 #[derive(Clone, Debug, Arbitrary)]
 pub enum Amode {
     ImmReg {
-        simm32: Simm32,
         base: Gpr,
-        flags: MemFlags,
+        simm32: Simm32,
+        trap: Option<TrapCode>,
     },
     ImmRegRegShift {
-        simm32: Simm32,
         base: Gpr,
         index: Gpr2MinusRsp,
         scale: Scale,
-        flags: MemFlags,
+        simm32: Simm32,
+        trap: Option<TrapCode>,
     },
     RipRelative {
-        target: MachLabel,
+        target: Label,
     },
 }
 impl Amode {
-    #[must_use]
-    pub fn get_flags(&self) -> MemFlags {
+    pub fn trap_code(&self) -> Option<TrapCode> {
         match self {
-            Amode::ImmReg { flags, .. } | Amode::ImmRegRegShift { flags, .. } => *flags,
-            Amode::RipRelative { .. } => MemFlags::trusted(),
+            Amode::ImmReg { trap, .. } | Amode::ImmRegRegShift { trap, .. } => *trap,
+            Amode::RipRelative { .. } => None,
         }
     }
 
-    pub fn emit_rex_prefix<BS: ByteSink + ?Sized>(&self, rex: RexFlags, enc_g: u8, sink: &mut BS) {
+    pub fn emit_rex_prefix(&self, rex: RexFlags, enc_g: u8, sink: &mut impl CodeSink) {
         match self {
             Amode::ImmReg { base, .. } => {
                 let enc_e = base.enc();
@@ -135,6 +132,7 @@ impl Scale {
 }
 
 #[derive(Debug, Arbitrary)]
+#[allow(clippy::module_name_repetitions)]
 pub enum GprMem {
     Gpr(Gpr),
     Mem(Amode),
@@ -169,8 +167,8 @@ impl GprMem {
     }
 }
 
-pub fn emit_modrm_sib_disp<BS: ByteSink + ?Sized>(
-    sink: &mut BS,
+pub fn emit_modrm_sib_disp(
+    sink: &mut impl CodeSink,
     enc_g: u8,
     mem_e: &Amode,
     bytes_at_end: u8,
@@ -247,6 +245,7 @@ pub fn emit_modrm_sib_disp<BS: ByteSink + ?Sized>(
             // to the end of the u32 field. So, to compensate for
             // this, we emit a negative extra offset in the u32 field
             // initially, and the relocation will add to it.
+            #[allow(clippy::cast_sign_loss)]
             sink.put4(-(i32::from(bytes_at_end)) as u32);
         }
     }

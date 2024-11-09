@@ -41,7 +41,7 @@ impl dsl::Inst {
     // `Self::<inst>(i) => write!(f, "{}", i),`
     pub fn generate_variant_display(&self, f: &mut Formatter) {
         let variant_name = self.struct_name();
-        fmtln!(f, "Self::{variant_name}(i) => write!(f, \"{{}}\", i),");
+        fmtln!(f, "Self::{variant_name}(i) => write!(f, \"{{i}}\"),");
     }
 
     // `Self::<inst>(i) => i.encode(b),`
@@ -64,7 +64,7 @@ impl dsl::Inst {
 
     /// `fn encode(&self, buf: &mut Vec<u8>) { ... }`
     pub fn generate_encode_function(&self, f: &mut Formatter) {
-        fmtln!(f, "pub fn encode(&self, buf: &mut MachBuffer<x64::Inst>) {{");
+        fmtln!(f, "pub fn encode(&self, buf: &mut impl CodeSink) {{");
         f.indent_push();
 
         // Emit trap.
@@ -73,7 +73,7 @@ impl dsl::Inst {
             f.comment("Emit trap.");
             fmtln!(f, "if let GprMem::Mem({op}) = &self.{op} {{");
             f.indent(|f| {
-                fmtln!(f, "if let Some(trap_code) = {op}.get_flags().trap_code() {{");
+                fmtln!(f, "if let Some(trap_code) = {op}.trap_code() {{");
                 f.indent(|f| {
                     fmtln!(f, "buf.add_trap(trap_code);");
                 });
@@ -103,7 +103,9 @@ impl dsl::Inst {
                     }
                     FixedReg(_) => {
                         let call = o.mutability.generate_regalloc_call();
-                        let fixed = o.location.generate_fixed_reg().unwrap();
+                        let Some(fixed) = o.location.generate_fixed_reg() else {
+                            unreachable!()
+                        };
                         fmtln!(f, "visitor.fixed_{call}({fixed}.enc());");
                     }
                     Reg(reg) => {
@@ -112,7 +114,7 @@ impl dsl::Inst {
                     }
                     RegMem(rm) => {
                         let call = o.mutability.generate_regalloc_call();
-                        fmtln!(f, "self.{rm}.{call}(visitor);")
+                        fmtln!(f, "self.{rm}.{call}(visitor);");
                     }
                 }
             }

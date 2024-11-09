@@ -1,9 +1,7 @@
 //! Pure register operands.
 
+use crate::{alloc::RegallocVisitor, rex::RexFlags};
 use arbitrary::Arbitrary;
-use cranelift_codegen::isa::x64::encoding::rex::RexFlags;
-
-use crate::alloc::RegallocVisitor;
 
 pub const ENC_RAX: u8 = 0;
 pub const ENC_RCX: u8 = 1;

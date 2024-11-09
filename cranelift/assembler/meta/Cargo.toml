@@ -5,7 +5,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-cranelift-codegen-meta = { path = "../../codegen/meta" }
 
 [lints.clippy]
 all = "deny"

@@ -8,10 +8,11 @@ pub fn fmt(
 ) -> Format {
     Format {
         name: name.into(),
-        operands: operands.into_iter().map(|o| o.into()).collect(),
+        operands: operands.into_iter().map(Into::into).collect(),
     }
 }
 
+#[must_use]
 pub fn rw(location: Location) -> Operand {
     Operand {
         location,
@@ -20,6 +21,7 @@ pub fn rw(location: Location) -> Operand {
     }
 }
 
+#[must_use]
 pub fn r(location: Location) -> Operand {
     location.into()
 }

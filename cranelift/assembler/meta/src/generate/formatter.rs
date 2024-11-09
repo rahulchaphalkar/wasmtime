@@ -87,7 +87,7 @@ impl Formatter {
 
     /// Add a comment line.
     pub fn comment(&mut self, s: impl AsRef<str>) {
-        self.line(format!("// {}", s.as_ref()), None)
+        self.line(format!("// {}", s.as_ref()), None);
     }
 
     /// Write `self.lines` to a file.

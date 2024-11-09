@@ -57,6 +57,7 @@ impl dsl::Location {
 }
 
 impl dsl::Mutability {
+    #[must_use]
     pub fn generate_regalloc_call(&self) -> &str {
         match self {
             dsl::Mutability::Read => "read",

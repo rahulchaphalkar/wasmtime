@@ -1,5 +1,7 @@
 //! Immediate operands to instructions.
 
+#![allow(clippy::module_name_repetitions)]
+
 use arbitrary::Arbitrary;
 
 #[derive(Arbitrary, Clone, Debug)]
@@ -78,7 +80,7 @@ impl std::fmt::LowerHex for Simm32 {
         }
         let abs = match self.0.checked_abs() {
             Some(i) => i,
-            None => -2147483648,
+            None => -2_147_483_648,
         };
         std::fmt::LowerHex::fmt(&abs, f)
     }

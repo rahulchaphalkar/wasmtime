@@ -24,6 +24,7 @@ impl dsl::Format {
         self.generate_immediate(f);
     }
 
+    #[allow(clippy::unused_self)]
     fn generate_legacy_prefix(&self, f: &mut Formatter, rex: &dsl::Rex) {
         if rex.prefixes != dsl::LegacyPrefixes::NoPrefix {
             f.empty_line();
@@ -40,6 +41,7 @@ impl dsl::Format {
         }
     }
 
+    #[allow(clippy::unused_self)]
     fn generate_opcode(&self, f: &mut Formatter, rex: &dsl::Rex) {
         f.empty_line();
         f.comment("Emit opcode.");
@@ -178,7 +180,11 @@ impl dsl::Format {
                 f.empty_line();
                 f.comment("Emit immediate.");
                 fmtln!(f, "let bytes = {};", imm.bytes());
-                fmtln!(f, "let value = self.{imm}.value() as u32;");
+                if imm.bits() == 32 {
+                    fmtln!(f, "let value = self.{imm}.value();");
+                } else {
+                    fmtln!(f, "let value = u32::from(self.{imm}.value());");
+                };
                 fmtln!(f, "emit_simm(buf, bytes, value);");
             }
             unknown => {
