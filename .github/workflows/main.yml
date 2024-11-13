@@ -746,6 +746,7 @@ jobs:
     - name: Run Wasmtime test with Intel SDE
       run: |
         set -ex
+        source $GITHUB_ENV
         sde -- cargo test -p wasmtime-cli mpk
       if: matrix.os == 'ubuntu-latest'
 
