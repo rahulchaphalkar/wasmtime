@@ -747,7 +747,7 @@ jobs:
       run: |
         set -ex
         source $GITHUB_ENV
-        sde -- cargo test -p wasmtime-cli mpk
+        sde-external-9.44.0-2024-08-22-lin/sde -- cargo test -p wasmtime-cli mpk
       if: matrix.os == 'ubuntu-latest'
 
     # Record some CPU details; this is helpful information if tests fail due
