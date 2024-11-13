@@ -734,6 +734,21 @@ jobs:
         touch ${{ runner.tool_cache }}/qemu/built
       if: matrix.qemu != ''
 
+    # Install Intel SDE
+    - name: Install Intel SDE
+      run: |
+        curl -O https://downloadmirror.intel.com/831748/sde-external-9.44.0-2024-08-22-lin.tar.xz
+        tar xf sde-external-9.44.0-2024-08-22-lin.tar.xz
+        echo "export PATH=sde-external-9.44.0-2024-08-22-lin:\$PATH" >> $GITHUB_ENV
+      if: matrix.os == 'ubuntu-latest'
+
+    # Dummy "mpk" tests for now
+    - name: Run Wasmtime test with Intel SDE
+      run: |
+        set -ex
+        sde -- cargo test -p wasmtime-cli mpk
+      if: matrix.os == 'ubuntu-latest'
+
     # Record some CPU details; this is helpful information if tests fail due
     # to CPU-specific features.
     - name: CPU information
