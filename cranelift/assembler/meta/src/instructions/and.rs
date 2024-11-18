@@ -1,4 +1,4 @@
-use crate::dsl::{fmt, inst, r, rex, rw, Features::*, Inst, LegacyPrefixes::*, Location::*};
+use crate::dsl::{fmt, inst, r, rex, rw, sx, Features::*, Inst, LegacyPrefixes::*, Location::*};
 
 pub fn list() -> Vec<Inst> {
     vec![
@@ -10,7 +10,7 @@ pub fn list() -> Vec<Inst> {
         // inst("andb", fmt("MI_SX", [rw(rm8), r(imm8)]), rex(0x80).w().digit(4).ib(), None),
         inst("andw", fmt("MI", [rw(rm16), r(imm16)]), rex(0x81).prefix(_66).digit(4).iw(), None),
         inst("andl", fmt("MI", [rw(rm32), r(imm32)]), rex(0x81).digit(4).id(), None),
-        // inst("andq", fmt("MI_SX", [rw(rm64), r(imm32)]), rex(0x81).w().digit(4).id(), None),
+        inst("andq", fmt("MI_SX", [rw(rm64), sx(imm32)]), rex(0x81).w().digit(4).id(), None),
         // inst("andbw", fmt("MI_SX", [rw(rm16), r(imm8)]), rex(0x83).digit(4).ib(), None),
         // inst("andbd", fmt("MI_SX", [rw(rm32), r(imm8)]), rex(0x83).digit(4).ib(), None),
         // inst("andbq", fmt("MI_SX", [rw(rm64), r(imm8)]), rex(0x83).w().digit(4).ib(), None),

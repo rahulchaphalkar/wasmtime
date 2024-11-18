@@ -26,6 +26,15 @@ pub fn r(location: Location) -> Operand {
     location.into()
 }
 
+#[must_use]
+pub fn sx(location: Location) -> Operand {
+    Operand {
+        location,
+        mutability: Mutability::Read,
+        extension: Extension::SignExtend,
+    }
+}
+
 pub struct Format {
     pub name: String,
     pub operands: Vec<Operand>,

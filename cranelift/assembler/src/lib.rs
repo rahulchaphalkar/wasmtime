@@ -9,7 +9,7 @@ mod rex;
 mod sink;
 
 use alloc::RegallocVisitor;
-use imm::{Imm16, Imm32, Imm8};
+use imm::{Extension, Imm16, Imm32, Imm8};
 use mem::{emit_modrm_sib_disp, GprMem};
 use reg::{Gpr, Size};
 use rex::{emit_simm, RexFlags};

@@ -706,15 +706,11 @@ dependencies = [
  "arbtest",
  "capstone",
  "cranelift-assembler-meta",
- "cranelift-codegen",
 ]
 
 [[package]]
 name = "cranelift-assembler-meta"
 version = "0.1.0"
-dependencies = [
- "cranelift-codegen-meta",
-]
 
 [[package]]
 name = "cranelift-bforest"

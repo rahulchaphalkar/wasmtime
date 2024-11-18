@@ -52,16 +52,26 @@ impl Imm32 {
     pub fn value(&self) -> u32 {
         self.0
     }
-}
-
-impl std::fmt::Display for Imm32 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if self.0 < 10 {
-            write!(f, "${:x}", self.0)
+    pub fn to_string(&self, extend: Extension) -> String {
+        if matches!(extend, Extension::SignExtend) {
+            let extended = self.0 as i32 as i64; // Convert u32 to i32, then to i64 for sign extension
+            if extended < 10 {
+                format!("$0x{:x}", extended)
+            } else {
+                format!("$0x{:x}", extended)
+            }
+        } else if self.0 < 10 {
+            format!("${:x}", self.0)
         } else {
-            write!(f, "$0x{:x}", self.0)
+            format!("$0x{:x}", self.0)
         }
     }
+}
+
+pub enum Extension {
+    None,
+    SignExtend,
+    ZeroExtend,
 }
 
 #[derive(Clone, Copy, Debug, Arbitrary)]

@@ -1,5 +1,5 @@
 use crate::dsl;
-
+use crate::dsl::format::Extension;
 impl dsl::Location {
     /// `<operand type>`
     #[must_use]
@@ -17,15 +17,39 @@ impl dsl::Location {
 
     /// `<operand>.to_string()`
     #[must_use]
-    pub fn generate_to_string(&self) -> String {
+    pub fn generate_to_string(&self, extension: Extension) -> String {
         use dsl::Location::*;
-        match self {
-            al => "\"%al\"".into(),
-            ax => "\"%ax\"".into(),
-            eax => "\"%eax\"".into(),
-            rax => "\"%rax\"".into(),
-            imm8 | imm16 | imm32 => format!("self.{self}.to_string()"),
-            r8 | r16 | r32 | r64 | rm8 | rm16 | rm32 | rm64 => match self.generate_size() {
+        match (self, extension) {
+            (al, _) => "\"%al\"".into(),
+            (ax, _) => "\"%ax\"".into(),
+            (eax, _) => "\"%eax\"".into(),
+            (rax, _) => "\"%rax\"".into(),
+            //(imm8, _) | (imm16, _) => format!("self.{self}.to_string()"),
+            (imm8, Extension::None) | (imm16, Extension::None) => {
+                format!("self.{self}.to_string()")
+            }
+            (imm32, Extension::None) => format!("self.{self}.to_string(Extension::None)"),
+            (imm8, Extension::SignExtend)
+            | (imm16, Extension::SignExtend)
+            | (imm32, Extension::SignExtend) => {
+                format!("self.{self}.to_string(Extension::SignExtend)")
+            }
+            (imm8, Extension::ZeroExtend) | (imm16, Extension::ZeroExtend) => {
+                format!("self.{self}.to_string()")
+            }
+            (imm32, Extension::ZeroExtend) => {
+                format!("self.{self}.to_string(Extension::ZeroExtend)")
+            }
+            //imm32 => format!("self.{self}.to_string(Extension::SignExtend)"),
+            //imm32 => format!("self.{self}.to_string(self.{self})"),
+            (r8, _)
+            | (r16, _)
+            | (r32, _)
+            | (r64, _)
+            | (rm8, _)
+            | (rm16, _)
+            | (rm32, _)
+            | (rm64, _) => match self.generate_size() {
                 Some(size) => format!("self.{self}.to_string({size})"),
                 None => unreachable!(),
             },
