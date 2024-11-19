@@ -23,7 +23,6 @@ const FAST_MATRIX = [
     "name": "Test Linux x86_64",
     "filter": "linux-x64",
     "isa": "x64",
-    "sdk": true,
   },
 ];
 
