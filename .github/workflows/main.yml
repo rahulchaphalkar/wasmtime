@@ -739,8 +739,8 @@ jobs:
       run: |
         curl -O https://downloadmirror.intel.com/831748/sde-external-9.44.0-2024-08-22-lin.tar.xz
         tar xf sde-external-9.44.0-2024-08-22-lin.tar.xz
-        echo "export SDE=$PWD/sde-external-9.44.0-2024-08-22-lin/sde" >> $GITHUB_ENV
-      if: matrix.os == 'ubuntu-latest' && matrix.sde == 'true'
+        echo "SDE=$PWD/sde-external-9.44.0-2024-08-22-lin/sde" >> $GITHUB_ENV
+      if: matrix.os == 'ubuntu-latest' && matrix.sde == true
 
     # Record some CPU details; this is helpful information if tests fail due
     # to CPU-specific features.
@@ -770,7 +770,7 @@ jobs:
 
     # Install VTune, see `cli_tests::profile_with_vtune`.
     - name: Install VTune
-      if: matrix.filter == 'linux-x64' && contains(matrix.bucket, 'wasmtime-cli')
+      if: matrix.filter == 'linux-x64' && contains(matrix.bucket, 'wasmtime-cli') && matrix.sde != true
       uses: abrown/install-vtune-action@v1
 
     # Build and test all features with SDE if enabled
