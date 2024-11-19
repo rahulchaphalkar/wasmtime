@@ -739,7 +739,7 @@ jobs:
       run: |
         curl -O https://downloadmirror.intel.com/831748/sde-external-9.44.0-2024-08-22-lin.tar.xz
         tar xf sde-external-9.44.0-2024-08-22-lin.tar.xz
-        echo "export SDE=$PWD/sde-external-9.44.0-2024-08-22-lin/sde" >> $GITHUB_ENV
+        echo "SDE=$PWD/sde-external-9.44.0-2024-08-22-lin/sde" >> $GITHUB_ENV
       if: matrix.os == 'ubuntu-latest' && matrix.sde == true
 
     # Record some CPU details; this is helpful information if tests fail due
