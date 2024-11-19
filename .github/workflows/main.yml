@@ -770,7 +770,7 @@ jobs:
 
     # Install VTune, see `cli_tests::profile_with_vtune`.
     - name: Install VTune
-      if: matrix.filter == 'linux-x64' && contains(matrix.bucket, 'wasmtime-cli')
+      if: matrix.filter == 'linux-x64' && contains(matrix.bucket, 'wasmtime-cli') && matrix.sde != true
       uses: abrown/install-vtune-action@v1
 
     # Build and test all features with SDE if enabled

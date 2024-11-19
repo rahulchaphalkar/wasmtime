@@ -2012,8 +2012,6 @@ fn profile_with_vtune() -> Result<()> {
         "-verbose",
         "-collect",
         "hotspots",
-        "-knob",
-        "sampling-mode=hw",
         "-user-data-dir",
         &std::env::temp_dir().to_string_lossy(),
         // ...then run Wasmtime with profiling enabled:
