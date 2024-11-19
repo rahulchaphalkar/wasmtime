@@ -77,6 +77,13 @@ const FULL_MATRIX = [
     "isa": "x64"
   },
   {
+    "os": "ubuntu-latest",
+    "name": "Test Linux x86_64 with APX",
+    "filter": "linux-x64",
+    "isa": "x64",
+    "sde": true,
+  },
+  {
     "os": "macos-13",
     "name": "Test macOS x86_64",
     "filter": "macos-x64",

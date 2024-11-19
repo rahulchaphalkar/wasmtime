@@ -739,16 +739,8 @@ jobs:
       run: |
         curl -O https://downloadmirror.intel.com/831748/sde-external-9.44.0-2024-08-22-lin.tar.xz
         tar xf sde-external-9.44.0-2024-08-22-lin.tar.xz
-        echo "export PATH=sde-external-9.44.0-2024-08-22-lin:\$PATH" >> $GITHUB_ENV
-      if: matrix.os == 'ubuntu-latest'
-
-    # Dummy "mpk" tests for now
-    - name: Run Wasmtime test with Intel SDE
-      run: |
-        set -ex
-        source $GITHUB_ENV
-        sde-external-9.44.0-2024-08-22-lin/sde -- cargo test -p wasmtime-cli mpk
-      if: matrix.os == 'ubuntu-latest'
+        echo "export SDE=$PWD/sde-external-9.44.0-2024-08-22-lin/sde" >> $GITHUB_ENV
+      if: matrix.os == 'ubuntu-latest' && matrix.sde == 'true'
 
     # Record some CPU details; this is helpful information if tests fail due
     # to CPU-specific features.
@@ -781,10 +773,22 @@ jobs:
       if: matrix.filter == 'linux-x64' && contains(matrix.bucket, 'wasmtime-cli')
       uses: abrown/install-vtune-action@v1
 
-    # Build and test all features
-    - run: ./ci/run-tests.sh --locked ${{ matrix.bucket }}
+    # Build and test all features with SDE if enabled
+    - name: Build and test all features with SDE
+      run: |
+        set -ex
+        ./ci/run-tests.sh --no-run --locked ${{ matrix.bucket }}
+        $SDE -- ./ci/run-tests.sh --locked ${{ matrix.bucket }}
       env:
         RUST_BACKTRACE: 1
+      if: matrix.sde == true
+
+    # Build and test all features
+    - name: Build and test all features
+      run: ./ci/run-tests.sh --locked ${{ matrix.bucket }}
+      env:
+        RUST_BACKTRACE: 1
+      if: matrix.sde != true
 
     # NB: the test job here is explicitly lacking in cancellation of this run if
     # something goes wrong. These take the longest anyway and otherwise if
