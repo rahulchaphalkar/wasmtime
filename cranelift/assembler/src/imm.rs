@@ -12,6 +12,28 @@ impl Imm8 {
     pub fn value(&self) -> u8 {
         self.0
     }
+
+    pub fn to_string(&self, extend: Extension) -> String {
+        if matches!(extend, Extension::SignExtend) {
+            let extended = self.0 as i8 as i64; // Convert u8 to i8, then to i64 for sign extension
+            if extended < 10 && extended >= 0 {
+                format!("${:x}", extended)
+            } else {
+                format!("$0x{:x}", extended)
+            }
+        } else if matches!(extend, Extension::ZeroExtend) {
+            let extended = self.0 as u8 as u64;
+            if self.0 < 10 {
+                format!("${:x}", extended)
+            } else {
+                format!("$0x{:x}", extended)
+            }
+        } else if self.0 < 10 {
+            format!("${:x}", self.0)
+        } else {
+            format!("$0x{:x}", self.0)
+        }
+    }
 }
 
 impl std::fmt::Display for Imm8 {
@@ -31,6 +53,28 @@ impl Imm16 {
     #[must_use]
     pub fn value(&self) -> u16 {
         self.0
+    }
+
+    pub fn to_string(&self, extend: Extension) -> String {
+        if matches!(extend, Extension::SignExtend) {
+            let extended = self.0 as i16 as i64; // Convert u8 to i8, then to i64 for sign extension
+            if extended < 10 && extended >= 0 {
+                format!("${:x}", extended)
+            } else {
+                format!("$0x{:x}", extended)
+            }
+        } else if matches!(extend, Extension::ZeroExtend) {
+            let extended = self.0 as u16 as u64;
+            if self.0 < 10 {
+                format!("${:x}", extended)
+            } else {
+                format!("$0x{:x}", extended)
+            }
+        } else if self.0 < 10 {
+            format!("${:x}", self.0)
+        } else {
+            format!("$0x{:x}", self.0)
+        }
     }
 }
 
@@ -54,9 +98,16 @@ impl Imm32 {
     }
     pub fn to_string(&self, extend: Extension) -> String {
         if matches!(extend, Extension::SignExtend) {
-            let extended = self.0 as i32 as i64; // Convert u32 to i32, then to i64 for sign extension
-            if extended < 10 {
+            let extended = self.0 as i32 as i64; // Convert u8 to i8, then to i64 for sign extension
+            if extended < 10 && extended >= 0 {
+                format!("${:x}", extended)
+            } else {
                 format!("$0x{:x}", extended)
+            }
+        } else if matches!(extend, Extension::ZeroExtend) {
+            let extended = self.0 as u32 as u64;
+            if self.0 < 10 {
+                format!("${:x}", extended)
             } else {
                 format!("$0x{:x}", extended)
             }

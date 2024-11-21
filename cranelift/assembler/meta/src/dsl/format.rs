@@ -23,7 +23,11 @@ pub fn rw(location: Location) -> Operand {
 
 #[must_use]
 pub fn r(location: Location) -> Operand {
-    location.into()
+    Operand {
+        location,
+        mutability: Mutability::Read,
+        extension: Extension::None,
+    }
 }
 
 #[must_use]
@@ -89,12 +93,16 @@ impl core::fmt::Display for Operand {
         let Self { location, mutability, extension } = self;
         write!(f, "{location}")?;
         let has_default_mutability = matches!(mutability, Mutability::Read);
-        let has_default_extension = matches!(extension, Extension::None);
-        match (has_default_mutability, has_default_extension) {
-            (true, true) => {}
-            (true, false) => write!(f, "[{extension}]")?,
-            (false, true) => write!(f, "[{mutability}]")?,
-            (false, false) => write!(f, "[{mutability},{extension}]")?,
+        //let has_default_extension = matches!(extension, Extension::None);
+        //match (has_default_mutability, has_default_extension) {
+        //(true, true) => {}
+        //(true, false) => write!(f, "[{extension}]")?,
+        //(false, true) => write!(f, "[{mutability}]")?,
+        //(false, false) => write!(f, "[{mutability},{extension}]")?,
+        //}
+        match has_default_mutability {
+            true => write!(f, "[{extension}]")?,
+            false => write!(f, "[{mutability},{extension}]")?,
         }
         Ok(())
     }
@@ -165,6 +173,13 @@ impl Location {
             imm8 | imm16 | imm32 => OperandKind::Imm(*self),
             r8 | r16 | r32 | r64 => OperandKind::Reg(*self),
             rm8 | rm16 | rm32 | rm64 => OperandKind::RegMem(*self),
+        }
+    }
+
+    pub fn to_usize(&self) -> usize {
+        match self {
+            Location::imm8 => 0,
+            _ => 1,
         }
     }
 }
@@ -240,7 +255,7 @@ impl Default for Extension {
 impl core::fmt::Display for Extension {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Extension::None => write!(f, ""),
+            Extension::None => write!(f, "none"),
             Extension::SignExtend => write!(f, "sx"),
             Extension::ZeroExtend => write!(f, "zx"),
         }

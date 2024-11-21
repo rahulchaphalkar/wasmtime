@@ -26,7 +26,7 @@ impl dsl::Location {
             (rax, _) => "\"%rax\"".into(),
             //(imm8, _) | (imm16, _) => format!("self.{self}.to_string()"),
             (imm8, Extension::None) | (imm16, Extension::None) => {
-                format!("self.{self}.to_string()")
+                format!("self.{self}.to_string(Extension::None)")
             }
             (imm32, Extension::None) => format!("self.{self}.to_string(Extension::None)"),
             (imm8, Extension::SignExtend)
@@ -35,7 +35,7 @@ impl dsl::Location {
                 format!("self.{self}.to_string(Extension::SignExtend)")
             }
             (imm8, Extension::ZeroExtend) | (imm16, Extension::ZeroExtend) => {
-                format!("self.{self}.to_string()")
+                format!("self.{self}.to_string(Extension::ZeroExtend)")
             }
             (imm32, Extension::ZeroExtend) => {
                 format!("self.{self}.to_string(Extension::ZeroExtend)")

@@ -4,7 +4,8 @@ use crate::dsl;
 impl dsl::Inst {
     /// `struct <inst> { <op>: Reg, <op>: Reg, ... }`
     pub fn generate_struct(&self, f: &mut Formatter) {
-        let struct_name = self.struct_name();
+        let immediate_name = self.immediate_name();
+        let struct_name = self.struct_name() + &immediate_name;
         let struct_fields = self.struct_fields();
 
         f.line(format!("/// `{self}`"), None);
@@ -31,29 +32,70 @@ impl dsl::Inst {
         format!("{}_{}", self.name.to_lowercase(), self.format.name.to_lowercase())
     }
 
-    /// `<inst>(<inst>),`
+    #[must_use]
+    fn immediate_name(&self) -> String {
+        self.format
+            .operands_by_kind()
+            .iter()
+            .find(|op| match op {
+                dsl::format::OperandKind::Imm(_) => true,
+                _ => false,
+            })
+            .map_or_else(
+                || String::new(),
+                |op| match op {
+                    dsl::format::OperandKind::Imm(dsl::Location::imm8) => "_ib".to_string(),
+                    dsl::format::OperandKind::Imm(dsl::Location::imm16) => "_iw".to_string(),
+                    dsl::format::OperandKind::Imm(dsl::Location::imm32) => "_id".to_string(),
+                    _ => "".to_string(),
+                },
+            )
+    }
+
+    /// `<inst>_<immediate_name>(<inst>),`
     pub fn generate_enum_variant(&self, f: &mut Formatter) {
         let variant_name = self.struct_name();
-        let struct_name = self.struct_name();
-        fmtln!(f, "{variant_name}({struct_name}),");
+        let immediate_name = self
+            .format
+            .operands_by_kind()
+            .iter()
+            .find(|op| match op {
+                dsl::format::OperandKind::Imm(_) => true,
+                _ => false,
+            })
+            .map_or_else(
+                || String::new(),
+                |op| match op {
+                    dsl::format::OperandKind::Imm(dsl::Location::imm8) => "_ib".to_string(),
+                    dsl::format::OperandKind::Imm(dsl::Location::imm16) => "_iw".to_string(),
+                    dsl::format::OperandKind::Imm(dsl::Location::imm32) => "_id".to_string(),
+                    _ => "".to_string(),
+                },
+            );
+
+        let struct_name = self.struct_name() + &immediate_name;
+        fmtln!(f, "{variant_name}{immediate_name}({struct_name}),");
     }
 
     // `Self::<inst>(i) => write!(f, "{}", i),`
     pub fn generate_variant_display(&self, f: &mut Formatter) {
         let variant_name = self.struct_name();
-        fmtln!(f, "Self::{variant_name}(i) => write!(f, \"{{i}}\"),");
+        let immediate_name = self.immediate_name();
+        fmtln!(f, "Self::{variant_name}{immediate_name}(i) => write!(f, \"{{i}}\"),");
     }
 
     // `Self::<inst>(i) => i.encode(b),`
     pub fn generate_variant_encode(&self, f: &mut Formatter) {
         let variant_name = self.struct_name();
-        fmtln!(f, "Self::{variant_name}(i) => i.encode(b),");
+        let immediate_name = self.immediate_name();
+        fmtln!(f, "Self::{variant_name}{immediate_name}(i) => i.encode(b),");
     }
 
     /// `impl <inst> { ... }`
     pub fn generate_struct_impl(&self, f: &mut Formatter) {
         let struct_name = self.struct_name();
-        fmtln!(f, "impl {struct_name} {{");
+        let immediate_name = self.immediate_name();
+        fmtln!(f, "impl {struct_name}{immediate_name} {{");
         f.indent_push();
         self.generate_encode_function(f);
         f.empty_line();
@@ -124,7 +166,8 @@ impl dsl::Inst {
 
     /// `impl Debug for <inst> { ... }`
     pub fn generate_display_impl(&self, f: &mut Formatter) {
-        let struct_name = self.struct_name();
+        let immediate_name = self.immediate_name();
+        let struct_name = self.struct_name() + &immediate_name;
         fmtln!(f, "impl std::fmt::Display for {struct_name} {{");
         f.indent_push();
         fmtln!(f, "fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {{");
@@ -138,10 +181,15 @@ impl dsl::Inst {
         //fmtln!(f, "//let {op} = {to_string};");
         //     i += 1;
         // }
+
+        //let mut i = 0;
+        //for op in &self.format.operands {
+        //    let to_string = op.generate_to_string();
+        // }
         let mut i = 0;
         for op in self.format.locations() {
             let extension = self.format.operands[i].extension;
-            //fmtln!(f, "// Iter: {i} Extend: {extend}");
+            fmtln!(f, "// Iter: {i} Extend: {extension}");
             let to_string = op.generate_to_string(extension);
             fmtln!(f, "let {op} = {to_string};");
             i += 1;
