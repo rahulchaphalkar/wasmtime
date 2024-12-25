@@ -1,13 +1,6 @@
 use crate::dsl::{fmt, inst, r, rex, rw, sxl, sxq, Features::*, Inst, LegacyPrefixes::*, Location::*};
 
 pub fn list() -> Vec<Inst> {
-    /*
-    In 64-bit mode, r/m8 can not be encoded to access the following byte registers if a REX prefix is used: AH, BH, CH, DH
-    So following REX instructions are unimplemented
-    [REX+80 /1 ib] [OR r/m8, imm8]
-    [REX+08/r] [OR r/m8, r8]
-    [REX+OA/r] [OR r8, r/m8]
-    */
     vec![
         inst("orb", fmt("I", [rw(al), r(imm8)]), rex(0x0C).ib(), None),
         inst("orw", fmt("I", [rw(ax), r(imm16)]), rex(0x0D).prefix(_66).iw(), None),
