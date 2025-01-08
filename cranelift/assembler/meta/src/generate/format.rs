@@ -1,5 +1,6 @@
 use super::{fmtln, Formatter};
-use crate::dsl;
+use crate::dsl::{self, LegacyPrefixes, Rex, Sse};
+//use crate::dsl::encoding::{HasLegacyPrefix, HasOpcode};
 
 impl dsl::Format {
     #[must_use]
@@ -24,12 +25,19 @@ impl dsl::Format {
         self.generate_immediate(f);
     }
 
+    pub fn generate_sse_encoding(&self, f: &mut Formatter, sse: &dsl::Sse) {
+        self.generate_legacy_prefix(f, sse);
+        self.generate_opcode(f, sse);
+        //self.generate_modrm_byte(f, sse);
+    }
+
     #[allow(clippy::unused_self)]
-    fn generate_legacy_prefix(&self, f: &mut Formatter, rex: &dsl::Rex) {
-        if rex.prefixes != dsl::LegacyPrefixes::NoPrefix {
+    fn generate_legacy_prefix<T: HasLegacyPrefix>(&self, f: &mut Formatter, encoding: &T) {
+        let prefixes = encoding.get_legacy_prefix();
+        if *prefixes != dsl::LegacyPrefixes::NoPrefix {
             f.empty_line();
             f.comment("Emit legacy prefixes.");
-            match rex.prefixes {
+            match prefixes {
                 dsl::LegacyPrefixes::NoPrefix => unreachable!(),
                 dsl::LegacyPrefixes::_66 => fmtln!(f, "buf.put1(0x66);"),
                 dsl::LegacyPrefixes::_F0 => fmtln!(f, "buf.put1(0xf0);"),
@@ -42,10 +50,11 @@ impl dsl::Format {
     }
 
     #[allow(clippy::unused_self)]
-    fn generate_opcode(&self, f: &mut Formatter, rex: &dsl::Rex) {
+    fn generate_opcode<T: HasOpcode>(&self, f: &mut Formatter, encoding: &T) {
         f.empty_line();
         f.comment("Emit opcode.");
-        fmtln!(f, "buf.put1(0x{:x});", rex.opcode);
+        //fmtln!(f, "buf.put1(0x{:x});", rex.opcode);
+        fmtln!(f, "buf.put1(0x{:x});", encoding.get_opcode());
     }
 
     fn generate_rex_prefix(&self, f: &mut Formatter, rex: &dsl::Rex) {
@@ -111,6 +120,17 @@ impl dsl::Format {
                 });
                 fmtln!(f, "}}");
             }
+            /*
+            [XmmReg(dst), RegMem(src)] => {
+                fmtln!(f, "let {dst} = self.{dst}.enc();");
+                fmtln!(f, "match &self.{src} {{");
+                f.indent(|f| {
+                    fmtln!(f, "GprMem::Gpr({src}) => rex.emit_two_op(buf, {dst}, {src}.enc()),");
+                    fmtln!(f, "GprMem::Mem({src}) => {src}.emit_rex_prefix(rex, {dst}, buf),");
+                });
+                fmtln!(f, "}}");
+            }
+            */
 
             unknown => todo!("unknown pattern: {unknown:?}"),
         }
@@ -190,6 +210,87 @@ impl dsl::Format {
                 // Do nothing: no immediates expected.
                 debug_assert!(!unknown.iter().any(|o| matches!(o, Imm(_))));
             }
+        }
+    }
+}
+
+pub trait HasLegacyPrefix {
+    fn get_legacy_prefix(&self) -> &LegacyPrefixes;
+}
+
+impl HasLegacyPrefix for Rex {
+    fn get_legacy_prefix(&self) -> &LegacyPrefixes {
+        &self.prefixes
+    }
+}
+
+impl HasLegacyPrefix for Sse {
+    fn get_legacy_prefix(&self) -> &LegacyPrefixes {
+        &self.prefixes
+    }
+}
+
+pub trait HasOpcode {
+    fn get_opcode(&self) -> u32;
+}
+
+impl HasOpcode for Rex {
+    fn get_opcode(&self) -> u32 {
+        self.opcode
+    }
+}
+
+impl HasOpcode for Sse {
+    fn get_opcode(&self) -> u32 {
+        self.opcode
+    }
+}
+
+pub trait HasModrmByte {
+    fn generate_modrm_byte(&self, f: &mut Formatter, operands: &[dsl::Operand]);
+}
+
+impl HasModrmByte for Rex {
+    fn generate_modrm_byte(&self, f: &mut Formatter, operands: &[dsl::Operand]) {
+        use dsl::OperandKind::{FixedReg, Imm, Reg, RegMem};
+
+        if let [dsl::Operand { kind: FixedReg(_), .. }, dsl::Operand { kind: Imm(_) }] = operands {
+            // No need to emit a comment.
+        } else {
+            f.empty_line();
+            f.comment("Emit ModR/M byte.");
+        }
+
+        match operands {
+            [FixedReg(_), Imm(_)] => {
+                // No need to emit a ModRM byte: we know the register used.
+            }
+            [RegMem(dst), Imm(_)] => {
+                debug_assert!(self.digit > 0);
+                fmtln!(f, "let digit = 0x{:x};", self.digit);
+                fmtln!(f, "match &self.{dst} {{");
+                f.indent(|f| {
+                    fmtln!(f, "GprMem::Gpr({dst}) => emit_modrm(buf, digit, {dst}.enc()),");
+                    fmtln!(
+                        f,
+                        "GprMem::Mem({dst}) => emit_modrm_sib_disp(buf, off, digit, {dst}, 0, None),"
+                    );
+                });
+                fmtln!(f, "}}");
+            }
+            [Reg(dst), RegMem(src)] => {
+                fmtln!(f, "let {dst} = self.{dst}.enc();");
+                fmtln!(f, "match &self.{src} {{");
+                f.indent(|f| {
+                    fmtln!(f, "GprMem::Gpr({src}) => emit_modrm(buf, {dst}, {src}.enc()),");
+                    fmtln!(
+                        f,
+                        "GprMem::Mem({src}) => emit_modrm_sib_disp(buf, off, {dst}, {src}, 0, None),"
+                    );
+                });
+                fmtln!(f, "}}");
+            }
+            _ => unimplemented!("Unsupported operand combination for ModR/M byte generation"),
         }
     }
 }

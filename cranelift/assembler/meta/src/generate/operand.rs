@@ -11,7 +11,8 @@ impl dsl::Location {
             imm16 => Some("Imm16"),
             imm32 => Some("Imm32"),
             r8 | r16 | r32 | r64 => Some("Gpr"),
-            rm8 | rm16 | rm32 | rm64 => Some("GprMem"),
+            xmm => Some("XmmReg"),
+            rm8 | rm16 | rm32 | rm64 | rm128 => Some("GprMem"),
         }
     }
 
@@ -27,11 +28,12 @@ impl dsl::Location {
             imm8 | imm16 | imm32 => {
                 let variant = extension.generate_variant();
                 format!("self.{self}.to_string({variant})")
-            }
-            r8 | r16 | r32 | r64 | rm8 | rm16 | rm32 | rm64 => match self.generate_size() {
+            },
+            r8 | r16 | r32 | r64 | rm8 | rm16 | rm32 | rm64 | rm128 => match self.generate_size() {
                 Some(size) => format!("self.{self}.to_string({size})"),
                 None => unreachable!(),
             },
+            xmm => format!("self.{self}.to_string()"),
         }
     }
 
@@ -40,7 +42,7 @@ impl dsl::Location {
     pub fn generate_size(&self) -> Option<&str> {
         use dsl::Location::*;
         match self {
-            al | ax | eax | rax | imm8 | imm16 | imm32 => None,
+            al | ax | eax | rax | imm8 | imm16 | imm32 | xmm | rm128 => None,
             r8 | rm8 => Some("Size::Byte"),
             r16 | rm16 => Some("Size::Word"),
             r32 | rm32 => Some("Size::Doubleword"),
@@ -53,10 +55,22 @@ impl dsl::Location {
     pub fn generate_fixed_reg(&self) -> Option<&str> {
         use dsl::Location::*;
         match self {
-            al | ax | eax | rax => Some("Gpr::new(reg::ENC_RAX.into())"),
-            imm8 | imm16 | imm32 | r8 | r16 | r32 | r64 | rm8 | rm16 | rm32 | rm64 => None,
+            al | ax | eax | rax => Some("Xmm::new(reg::ENC_RAX.into())"),
+            imm8 | imm16 | imm32 | r8 | r16 | r32 | r64 | xmm | rm8 | rm16 | rm32 | rm64 | rm128 => None,
         }
     }
+
+    /*
+    /// `XmmReg(regs::...)`
+    #[must_use]
+    pub fn generate_xmm_reg(&self) -> Option<&str> {
+        use dsl::Location::*;
+        match self {
+            xmm => Some("XmmReg::new(reg::ENC_XMM0.into())"),
+            al | ax | eax | rax | imm8 | imm16 | imm32 | r8 | r16 | r32 | r64 | rm8 | rm16 | rm32 | rm64 | rm128 => None,
+        }
+    }
+    */
 }
 
 impl dsl::Mutability {

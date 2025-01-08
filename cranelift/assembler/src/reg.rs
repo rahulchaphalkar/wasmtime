@@ -172,6 +172,42 @@ impl Gpr {
     }
 }
 
+#[derive(Clone, Copy, Debug)]
+pub struct Xmm(pub(crate) u32);
+
+impl Xmm {
+    pub fn new(index: u32) -> Self {
+        Self(index)
+    }
+
+    pub fn enc(&self) -> u8 {
+        assert!(self.0 < 16, "invalid register: {}", self.0);
+        self.0.try_into().expect("invalid register")
+    }
+
+    pub fn to_string(&self) -> &str {
+        match self.enc() {
+            ENC_XMM0 => "%xmm0",
+            ENC_XMM1 => "%xmm1",
+            ENC_XMM2 => "%xmm2",
+            ENC_XMM3 => "%xmm3",
+            ENC_XMM4 => "%xmm4",
+            ENC_XMM5 => "%xmm5",
+            ENC_XMM6 => "%xmm6",
+            ENC_XMM7 => "%xmm7",
+            ENC_XMM8 => "%xmm8",
+            ENC_XMM9 => "%xmm9",
+            ENC_XMM10 => "%xmm10",
+            ENC_XMM11 => "%xmm11",
+            ENC_XMM12 => "%xmm12",
+            ENC_XMM13 => "%xmm13",
+            ENC_XMM14 => "%xmm14",
+            ENC_XMM15 => "%xmm15",
+            _ => panic!("invalid register encoding: {}", self.0),
+        }
+    }
+}
+
 impl<'a> Arbitrary<'a> for Gpr {
     fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
         Ok(Self(u.int_in_range(0..=15)?))

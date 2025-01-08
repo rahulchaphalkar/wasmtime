@@ -1,5 +1,5 @@
 use super::{fmtln, generate_derive, Formatter};
-use crate::dsl;
+use crate::dsl::{self, Sse};
 
 impl dsl::Inst {
     /// `struct <inst> { <op>: Reg, <op>: Reg, ... }`
@@ -98,6 +98,7 @@ impl dsl::Inst {
         match &self.encoding {
             dsl::Encoding::Rex(rex) => self.format.generate_rex_encoding(f, rex),
             dsl::Encoding::Vex(_) => todo!(),
+            dsl::Encoding::Sse(sse: &Sse) => sse.generate_sse_encoding(f, sse),
         }
 
         f.indent_pop();
@@ -128,6 +129,10 @@ impl dsl::Inst {
                     RegMem(rm) => {
                         let call = o.mutability.generate_regalloc_call();
                         fmtln!(f, "self.{rm}.{call}(visitor);");
+                    }
+                    XmmReg(xmm_reg) => {
+                        let call = o.mutability.generate_regalloc_call();
+                        fmtln!(f, "self.{xmm_reg}.{call}(visitor);");
                     }
                 }
             }

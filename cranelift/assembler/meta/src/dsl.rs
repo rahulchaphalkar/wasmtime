@@ -4,11 +4,11 @@
 //! - compact--i.e., define an x64 instruction on a single line
 //! - and a close-to-direct mapping of what we read in the x64 developer manual
 
-mod encoding;
+pub mod encoding;
 mod features;
 pub mod format;
 
-pub use encoding::{rex, vex, Encoding, LegacyPrefixes, Rex};
+pub use encoding::{rex, vex, sse, Encoding, LegacyPrefixes, Rex, Sse};
 pub use features::Features;
 pub use format::{fmt, r, rw, sxl, sxq, sxw};
 pub use format::{Extension, Format, Location, Mutability, Operand, OperandKind};
