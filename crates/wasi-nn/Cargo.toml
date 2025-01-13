@@ -31,7 +31,7 @@ wasmtime = { workspace = true, features = [
 tracing = { workspace = true }
 thiserror = { workspace = true }
 # openvino = { path = "/home/rahul/repos/llm-openvino/openvino-rs/crates/openvino", features = ["runtime-linking"], optional = true }
-openvino = { git = "https://github.com/rahulchaphalkar/openvino-rs.git", branch = "string-tensor", rev = "fa03558816cccd1c52cc902e9239e94ca5541d6d", features = ["runtime-linking"], optional = true }
+openvino = { git = "https://github.com/rahulchaphalkar/openvino-rs.git", rev = "fa03558816cccd1c52cc902e9239e94ca5541d6d", features = ["runtime-linking"], optional = true }
 
 ort = { version = "2.0.0-rc.2", default-features = false, features = [
     "copy-dylibs",
