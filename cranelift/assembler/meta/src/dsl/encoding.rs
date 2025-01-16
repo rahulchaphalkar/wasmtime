@@ -20,27 +20,15 @@ pub fn vex() -> Vex {
     Vex {}
 }
 
-/// SSE instructions.
-#[must_use]
-pub fn sse(opcode: u32) -> Sse {
-    Sse {
-        prefixes: LegacyPrefixes::NoPrefix,
-        opcode,
-        r: false,
-    }
-}
-
 pub enum Encoding {
     Rex(Rex),
     Vex(Vex),
-    Sse(Sse),
 }
 impl Encoding {
     pub fn validate(&self, operands: &[Operand]) {
         match self {
             Encoding::Rex(rex) => rex.validate(operands),
             Encoding::Vex(vex) => vex.validate(),
-            Encoding::Sse(sse) => sse.validate(operands),
         }
     }
 
@@ -51,7 +39,6 @@ impl fmt::Display for Encoding {
         match self {
             Encoding::Rex(rex) => write!(f, "{rex}"),
             Encoding::Vex(_vex) => todo!(),
-            Encoding::Sse(sse) => write!(f, "{sse}"),
         }
     }
 }
@@ -246,108 +233,3 @@ impl Vex {
         todo!()
     }
 }
-
-pub struct Sse {
-    /// Any legacy prefixes that should be included with the instruction.
-    pub prefixes: LegacyPrefixes,
-    /// The opcode of the instruction.
-    pub opcode: u32,
-    /// From the specification: "indicates that the ModR/M byte of the
-    /// instruction contains a register operand and an r/m operand."
-    pub r: bool,
-}
-
-impl Sse {
-    fn validate(&self, operands: &[Operand]) {
-        todo!()
-    }
-
-    #[must_use]
-    pub fn prefix(self, prefixes: LegacyPrefixes) -> Self {
-        Self { prefixes, ..self }
-    }
-
-    #[must_use]
-    pub fn r(self) -> Self {
-        Self { r: true, ..self }
-    }
-
-    /*
-    pub fn emit(&self, buf: &mut Vec<u8>, operands: &[Operand]) {
-        match self.prefix {
-            LegacyPrefixes::NoPrefix => {}
-            LegacyPrefixes::_66 => buf.push(0x66),
-            _ => todo!(),
-        }
-
-        buf.push(0x0F);
-        buf.push((self.opcode & 0xFF) as u8);
-
-    }
-    */
-}
-
-impl From<Sse> for Encoding {
-    fn from(sse: Sse) -> Encoding {
-        Encoding::Sse(sse)
-    }
-}
-
-impl fmt::Display for Sse {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self.prefixes {
-            LegacyPrefixes::NoPrefix => {}
-            LegacyPrefixes::_66 => write!(f, "0x66 + ")?,
-            _ => unimplemented!("only 0x66 is supported for SSE instructions"),
-        }
-        write!(f, "{:#04x}", self.opcode)?;
-        if self.r {
-            write!(f, " /r")?;
-        }
-        Ok(())
-    }
-}
-
-/*
-pub trait HasLegacyPrefix {
-    fn get_legacy_prefix(&self) -> &LegacyPrefixes;
-}
-
-impl HasLegacyPrefix for Rex {
-    fn get_legacy_prefix(&self) -> &LegacyPrefixes {
-        &self.prefixes
-    }
-}
-
-impl HasLegacyPrefix for Sse {
-    fn get_legacy_prefix(&self) -> &LegacyPrefixes {
-        &self.prefixes
-    }
-}
-
-pub trait HasOpcode {
-    fn get_opcode(&self) -> u32;
-}
-
-impl HasOpcode for Rex {
-    fn get_opcode(&self) -> u32 {
-        self.opcode
-    }
-}
-
-impl HasOpcode for Sse {
-    fn get_opcode(&self) -> u32 {
-        self.opcode
-    }
-}
-
-pub trait HasModrmByte {
-    fn generate_modrm_byte(&self, f: &mut Formatter);
-}
-
-impl HasModrmByte for Rex {
-    fn generate_modrm_byte(&self, f: &mut Formatter) {
-        
-    }
-}
-*/

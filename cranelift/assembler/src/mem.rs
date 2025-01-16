@@ -2,10 +2,11 @@
 
 use crate::alloc::RegallocVisitor;
 use crate::imm::{Simm32, Simm32PlusKnownOffset};
-use crate::reg::{self, Gpr, Gpr2MinusRsp, Size};
+use crate::reg::{self, Gpr, Gpr2MinusRsp, Size, Xmm};
 use crate::rex::{encode_modrm, encode_sib, Imm, RexFlags};
 use crate::sink::{CodeSink, KnownOffsetTable, Label, TrapCode};
 use arbitrary::Arbitrary;
+
 
 #[derive(Arbitrary, Clone, Debug)]
 pub enum Amode {
@@ -24,12 +25,26 @@ pub enum Amode {
     RipRelative {
         target: Label,
     },
+    // SSE uses xmm regs
+    ImmXmm {
+        base: Xmm,
+        simm32: Simm32,
+        trap: Option<TrapCode>,
+    },
+    ImmXmmXmmShift {
+        base: Xmm,
+        index: Xmm,
+        scale: Scale,
+        simm32: Simm32,
+        trap: Option<TrapCode>,
+    },
 }
 impl Amode {
     pub fn trap_code(&self) -> Option<TrapCode> {
         match self {
             Amode::ImmReg { trap, .. } | Amode::ImmRegRegShift { trap, .. } => *trap,
             Amode::RipRelative { .. } => None,
+            Amode::ImmXmm { trap, .. } | Amode::ImmXmmXmmShift { trap, .. } => *trap,
         }
     }
 
@@ -47,6 +62,15 @@ impl Amode {
             Amode::RipRelative { .. } => {
                 // note REX.B = 0.
                 rex.emit_two_op(sink, enc_g, 0);
+            }
+            Amode::ImmXmm { base, .. } => {
+                let enc_e = base.enc();
+                rex.emit_two_op(sink, enc_g, enc_e);
+            }
+            Amode::ImmXmmXmmShift { base: reg_base, index: reg_index, .. } => {
+                let enc_base = reg_base.enc();
+                let enc_index = reg_index.enc();
+                rex.emit_three_op(sink, enc_g, enc_index, enc_base);
             }
         }
     }
@@ -67,6 +91,13 @@ impl Amode {
                 visitor.read(base.as_mut());
                 debug_assert_ne!(index.enc(), reg::ENC_RBP);
                 debug_assert_ne!(index.enc(), reg::ENC_RSP);
+                visitor.read(index.as_mut());
+            }
+            Amode::ImmXmm { base, .. } => {
+                    visitor.read(base.as_mut());
+            }
+            Amode::ImmXmmXmmShift { base, index, .. } => {
+                visitor.read(base.as_mut());
                 visitor.read(index.as_mut());
             }
             Amode::RipRelative { .. } => todo!(),
@@ -99,6 +130,30 @@ impl std::fmt::Display for Amode {
                         simm32,
                         base.to_string(Size::Quadword),
                         index.to_string(Size::Quadword)
+                    )
+                }
+            }
+            Amode::ImmXmm { simm32, base, .. } => {
+                // Note: size is always 128bits
+                write!(f, "{:x}({})", simm32, base.to_string())
+            }
+            Amode::ImmXmmXmmShift { simm32, base, index, scale, .. } => {
+                if scale.shift() > 1 {
+                    write!(
+                        f,
+                        "{:x}({}, {}, {})",
+                        simm32,
+                        base.to_string(),
+                        index.to_string(),
+                        scale.shift()
+                    )
+                } else {
+                    write!(
+                        f,
+                        "{:x}({}, {})",
+                        simm32,
+                        base.to_string(),
+                        index.to_string()
                     )
                 }
             }
@@ -164,6 +219,42 @@ impl GprMem {
     }
 }
 
+#[derive(Arbitrary, Clone, Debug)]
+#[allow(clippy::module_name_repetitions)]
+pub enum XmmMem {
+    Xmm(Xmm),
+    Mem(Amode),
+}
+impl XmmMem {
+    // pub fn always_emit_if_8bit_needed(&self, rex: &mut RexFlags) {
+    //     match self {
+    //         GprMem::Gpr(gpr) => gpr.always_emit_if_8bit_needed(rex),
+    //         GprMem::Mem(_) => {}
+    //     }
+    // }
+
+    pub fn to_string(&self) -> String {
+        match self {
+            XmmMem::Xmm(xmm) => xmm.to_string().to_owned(),
+            XmmMem::Mem(amode) => amode.to_string(),
+        }
+    }
+
+    pub fn read(&mut self, visitor: &mut impl RegallocVisitor) {
+        match self {
+            XmmMem::Xmm(xmm) => xmm.read(visitor),
+            XmmMem::Mem(amode) => amode.read(visitor),
+        }
+    }
+
+    pub fn read_write(&mut self, visitor: &mut impl RegallocVisitor) {
+        match self {
+            XmmMem::Xmm(xmm) => xmm.read_write(visitor),
+            XmmMem::Mem(amode) => amode.read(visitor),
+        }
+    }
+}
+
 pub fn emit_modrm_sib_disp(
     sink: &mut impl CodeSink,
     offsets: &impl KnownOffsetTable,
@@ -202,6 +293,14 @@ pub fn emit_modrm_sib_disp(
             }
         }
 
+        Amode::ImmXmm { simm32, base, .. } => {
+            let enc_e = base.enc();
+            let mut imm = Imm::new(simm32.value(), evex_scaling);
+            sink.put1(encode_modrm(imm.m0d(), enc_g & 7, enc_e & 7));
+            //sink.put2(encode_modrm(imm.m0d(), enc_g & 7, enc_e & 7));
+            imm.emit(sink);
+        }
+
         Amode::ImmRegRegShift {
             simm32, base: reg_base, index: reg_index, scale, ..
         } => {
@@ -225,6 +324,23 @@ pub fn emit_modrm_sib_disp(
 
             // With the above determined encode the ModRM byte, then the SIB
             // byte, then any immediate as necessary.
+            sink.put1(encode_modrm(imm.m0d(), enc_g & 7, 0b100));
+            sink.put1(encode_sib(scale.enc(), enc_index & 7, enc_base & 7));
+            imm.emit(sink);
+        }
+
+        Amode::ImmXmmXmmShift {
+            simm32,
+            base: reg_base,
+            index: reg_index,
+            scale,
+            ..
+        } => {
+            let enc_base = reg_base.enc();
+            let enc_index = reg_index.enc();
+
+            let mut imm = Imm::new(simm32.value(), evex_scaling);
+
             sink.put1(encode_modrm(imm.m0d(), enc_g & 7, 0b100));
             sink.put1(encode_sib(scale.enc(), enc_index & 7, enc_base & 7));
             imm.emit(sink);

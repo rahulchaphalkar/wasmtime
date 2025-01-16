@@ -191,7 +191,8 @@ impl Location {
             imm8 | imm16 | imm32 => OperandKind::Imm(*self),
             r8 | r16 | r32 | r64 => OperandKind::Reg(*self),
             xmm => OperandKind::XmmReg(*self),
-            rm8 | rm16 | rm32 | rm64 | rm128 => OperandKind::RegMem(*self),
+            rm8 | rm16 | rm32 | rm64 => OperandKind::RegMem(*self),
+            rm128 => OperandKind::XmmRegMem(*self),
         }
     }
 }
@@ -232,6 +233,7 @@ pub enum OperandKind {
     Reg(Location),
     RegMem(Location),
     XmmReg(Location),
+    XmmRegMem(Location),
 }
 
 #[derive(Clone, Copy, Debug)]

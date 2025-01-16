@@ -1,5 +1,5 @@
 use super::{fmtln, generate_derive, Formatter};
-use crate::dsl::{self, Sse};
+use crate::dsl::{self};
 
 impl dsl::Inst {
     /// `struct <inst> { <op>: Reg, <op>: Reg, ... }`
@@ -84,7 +84,14 @@ impl dsl::Inst {
         if let Some(op) = self.format.uses_memory() {
             f.empty_line();
             f.comment("Emit trap.");
-            fmtln!(f, "if let GprMem::Mem({op}) = &self.{op} {{");
+            match op {
+                crate::dsl::Location::rm128 => {
+                    fmtln!(f, "if let XmmMem::Mem({op}) = &self.{op} {{");
+                }
+                _ => {
+                    fmtln!(f, "if let GprMem::Mem({op}) = &self.{op} {{");
+                }
+            }
             f.indent(|f| {
                 fmtln!(f, "if let Some(trap_code) = {op}.trap_code() {{");
                 f.indent(|f| {
@@ -98,7 +105,6 @@ impl dsl::Inst {
         match &self.encoding {
             dsl::Encoding::Rex(rex) => self.format.generate_rex_encoding(f, rex),
             dsl::Encoding::Vex(_) => todo!(),
-            dsl::Encoding::Sse(sse: &Sse) => sse.generate_sse_encoding(f, sse),
         }
 
         f.indent_pop();
@@ -133,6 +139,10 @@ impl dsl::Inst {
                     XmmReg(xmm_reg) => {
                         let call = o.mutability.generate_regalloc_call();
                         fmtln!(f, "self.{xmm_reg}.{call}(visitor);");
+                    }
+                    XmmRegMem(xmm_mem) => {
+                        let call = o.mutability.generate_regalloc_call();
+                        fmtln!(f, "self.{xmm_mem}.{call}(visitor);");
                     }
                 }
             }
