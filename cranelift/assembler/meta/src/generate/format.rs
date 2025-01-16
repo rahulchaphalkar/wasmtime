@@ -204,7 +204,6 @@ impl dsl::Format {
                 });
                 fmtln!(f, "}}");
             }
-            // implement pattern: [XmmReg(xmm), RegMem(rm128)]
             [XmmReg(dst), XmmRegMem(src)] => {
                 fmtln!(f, "let {dst} = self.{dst}.enc();");
                 fmtln!(f, "match &self.{src} {{");

@@ -32,7 +32,6 @@ impl Amode {
         match self {
             Amode::RipRelative { .. } => None,
             Amode::ImmReg { trap, .. } | Amode::ImmRegRegShift { trap, .. } => *trap,
-
         }
     }
 
@@ -174,7 +173,6 @@ pub enum XmmMem {
     Mem(Amode),
 }
 impl XmmMem {
-
     pub fn to_string(&self) -> String {
         match self {
             XmmMem::Xmm(xmm) => xmm.to_string().to_owned(),

@@ -1,5 +1,5 @@
 use super::{fmtln, generate_derive, Formatter};
-use crate::dsl::{self};
+use crate::dsl;
 
 impl dsl::Inst {
     /// `struct <inst> { <op>: Reg, <op>: Reg, ... }`
