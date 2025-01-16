@@ -33,13 +33,13 @@ pub enum Amode_Xmm {
         target: Label,
     },
     ImmXmm {
-        base: Xmm,
+        base: Gpr,
         simm32: Simm32,
         trap: Option<TrapCode>,
     },
     ImmXmmXmmShift {
-        base: Xmm,
-        index: Xmm,
+        base: Gpr,
+        index: Gpr2MinusRsp,
         scale: Scale,
         simm32: Simm32,
         trap: Option<TrapCode>,
@@ -173,8 +173,7 @@ impl std::fmt::Display for Amode_Xmm {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Amode_Xmm::ImmXmm { simm32, base, .. } => {
-                // Note: size is always 128bits
-                write!(f, "{:x}({})", simm32, base.to_string())
+                write!(f, "{:x}({})", simm32, base.to_string(Size::Quadword))
             }
             Amode_Xmm::ImmXmmXmmShift { simm32, base, index, scale, .. } => {
                 if scale.shift() > 1 {
@@ -182,8 +181,8 @@ impl std::fmt::Display for Amode_Xmm {
                         f,
                         "{:x}({}, {}, {})",
                         simm32,
-                        base.to_string(),
-                        index.to_string(),
+                        base.to_string(Size::Quadword),
+                        index.to_string(Size::Quadword),
                         scale.shift()
                     )
                 } else {
@@ -191,8 +190,8 @@ impl std::fmt::Display for Amode_Xmm {
                         f,
                         "{:x}({}, {})",
                         simm32,
-                        base.to_string(),
-                        index.to_string()
+                        base.to_string(Size::Quadword),
+                        index.to_string(Size::Quadword)
                     )
                 }
             }
