@@ -199,7 +199,7 @@ impl dsl::Format {
                     fmtln!(f, "XmmMem::Xmm({dst}) => emit_modrm(buf, {src}, {dst}.enc()),");
                     fmtln!(
                         f,
-                        "XmmMem::Mem({dst}) => emit_modrm_sib_disp_xmm(buf, off, {src}, {dst}, 0, None),"
+                        "XmmMem::Mem({dst}) => emit_modrm_sib_disp(buf, off, {src}, {dst}, 0, None),"
                     );
                 });
                 fmtln!(f, "}}");
@@ -212,7 +212,7 @@ impl dsl::Format {
                     fmtln!(f, "XmmMem::Xmm({src}) => emit_modrm(buf, {dst}, {src}.enc()),");
                     fmtln!(
                         f,
-                        "XmmMem::Mem({src}) => emit_modrm_sib_disp_xmm(buf, off, {dst}, {src}, 0, None),"
+                        "XmmMem::Mem({src}) => emit_modrm_sib_disp(buf, off, {dst}, {src}, 0, None),"
                     );
                 });
                 fmtln!(f, "}}");
