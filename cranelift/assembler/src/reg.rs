@@ -68,119 +68,103 @@ impl Gpr {
     }
 
     pub fn to_string(&self, size: Size) -> &str {
-        use Size::{Byte, Doubleword, Quadword, Word, DoubleQuadword};
+        use Size::{Byte, Doubleword, Quadword, Word};
         match self.enc() {
             ENC_RAX => match size {
                 Byte => "%al",
                 Word => "%ax",
                 Doubleword => "%eax",
                 Quadword => "%rax",
-                DoubleQuadword => unreachable!("Gpr should never be DoubleQuadword"),
             },
             ENC_RBX => match size {
                 Byte => "%bl",
                 Word => "%bx",
                 Doubleword => "%ebx",
                 Quadword => "%rbx",
-                DoubleQuadword => unreachable!("Gpr should never be DoubleQuadword"),
             },
             ENC_RCX => match size {
                 Byte => "%cl",
                 Word => "%cx",
                 Doubleword => "%ecx",
                 Quadword => "%rcx",
-                DoubleQuadword => unreachable!("Gpr should never be DoubleQuadword"),
             },
             ENC_RDX => match size {
                 Byte => "%dl",
                 Word => "%dx",
                 Doubleword => "%edx",
                 Quadword => "%rdx",
-                DoubleQuadword => unreachable!("Gpr should never be DoubleQuadword"),
             },
             ENC_RSI => match size {
                 Byte => "%sil",
                 Word => "%si",
                 Doubleword => "%esi",
                 Quadword => "%rsi",
-                DoubleQuadword => unreachable!("Gpr should never be DoubleQuadword"),
             },
             ENC_RDI => match size {
                 Byte => "%dil",
                 Word => "%di",
                 Doubleword => "%edi",
                 Quadword => "%rdi",
-                DoubleQuadword => unreachable!("Gpr should never be DoubleQuadword"),
             },
             ENC_RBP => match size {
                 Byte => "%bpl",
                 Word => "%bp",
                 Doubleword => "%ebp",
                 Quadword => "%rbp",
-                DoubleQuadword => unreachable!("Gpr should never be DoubleQuadword"),
             },
             ENC_RSP => match size {
                 Byte => "%spl",
                 Word => "%sp",
                 Doubleword => "%esp",
                 Quadword => "%rsp",
-                DoubleQuadword => unreachable!("Gpr should never be DoubleQuadword"),
             },
             ENC_R8 => match size {
                 Byte => "%r8b",
                 Word => "%r8w",
                 Doubleword => "%r8d",
                 Quadword => "%r8",
-                DoubleQuadword => unreachable!("Gpr should never be DoubleQuadword"),
             },
             ENC_R9 => match size {
                 Byte => "%r9b",
                 Word => "%r9w",
                 Doubleword => "%r9d",
                 Quadword => "%r9",
-                DoubleQuadword => unreachable!("Gpr should never be DoubleQuadword"),
             },
             ENC_R10 => match size {
                 Byte => "%r10b",
                 Word => "%r10w",
                 Doubleword => "%r10d",
                 Quadword => "%r10",
-                DoubleQuadword => unreachable!("Gpr should never be DoubleQuadword"),
             },
             ENC_R11 => match size {
                 Byte => "%r11b",
                 Word => "%r11w",
                 Doubleword => "%r11d",
                 Quadword => "%r11",
-                DoubleQuadword => unreachable!("Gpr should never be DoubleQuadword"),
             },
             ENC_R12 => match size {
                 Byte => "%r12b",
                 Word => "%r12w",
                 Doubleword => "%r12d",
                 Quadword => "%r12",
-                DoubleQuadword => unreachable!("Gpr should never be DoubleQuadword"),
             },
             ENC_R13 => match size {
                 Byte => "%r13b",
                 Word => "%r13w",
                 Doubleword => "%r13d",
                 Quadword => "%r13",
-                DoubleQuadword => unreachable!("Gpr should never be DoubleQuadword"),
             },
             ENC_R14 => match size {
                 Byte => "%r14b",
                 Word => "%r14w",
                 Doubleword => "%r14d",
                 Quadword => "%r14",
-                DoubleQuadword => unreachable!("Gpr should never be DoubleQuadword"),
             },
             ENC_R15 => match size {
                 Byte => "%r15b",
                 Word => "%r15w",
                 Doubleword => "%r15d",
                 Quadword => "%r15",
-                DoubleQuadword => unreachable!("Gpr should never be DoubleQuadword"),
             },
             _ => panic!("%invalid{}", self.0), // TODO: print instead?
         }
@@ -277,7 +261,6 @@ pub enum Size {
     Word,
     Doubleword,
     Quadword,
-    DoubleQuadword,
 }
 
 #[derive(Clone, Debug)]
