@@ -33,6 +33,15 @@ impl dsl::Format {
         self.generate_immediate(f);
     }
 
+    pub fn generate_vex_encoding(&self, f: &mut Formatter, rex: &dsl::Vex) {
+        // self.generate_legacy_prefix(f, rex);
+        // self.generate_rex_prefix(f, rex);
+        // self.generate_opcodes(f, rex);
+        // self.generate_modrm_byte(f, rex);
+        // self.generate_immediate(f);
+        self.generate_vex_prefix(f, vex);
+    }
+
     /// `buf.put1(...);`
     fn generate_legacy_prefix(&self, f: &mut Formatter, rex: &dsl::Rex) {
         use dsl::LegacyPrefix::*;
@@ -55,6 +64,20 @@ impl dsl::Format {
                 }
             }
         }
+    }
+
+    fn generate_vex_prefix(&self, f: &mut Formatter, vex: &dsl::Vex) {
+        //use dsl::LegacyPrefix::*;
+        use dsl::Encoding::Vex;
+        f.comment("Emit Vex prefixes.");
+        // First byte is 0xC4 or 0xC5.
+        if self.use_2byte_prefix() {
+            //self.encode_2byte_prefix();
+            fmtln!(f, "buf.put1(0xC5);");
+        } else {
+            fmtln!(f, "buf.put1(0xC4);");
+        }
+
     }
 
     // `buf.put1(...);`
@@ -257,7 +280,7 @@ impl dsl::Format {
             [] => unimplemented!("if you truly need this (and not a `SideEffect*`), add a `NoReturn` variant to `AssemblerOutputs`"),
             [one] => match one.mutability {
                 Read => unreachable!(),
-                ReadWrite => match one.location.kind() {
+                ReadWrite | Write => match one.location.kind() {
                     Imm(_) => unreachable!(),
                     FixedReg(_) => vec![IsleConstructor::RetGpr],
                     // One read/write register output? Output the instruction

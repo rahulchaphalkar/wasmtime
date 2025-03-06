@@ -50,6 +50,16 @@ pub fn r(location: Location) -> Operand {
     }
 }
 
+/// An abbreviated constructor for a "write" operand.
+#[must_use]
+pub fn w(location: Location) -> Operand {
+    Operand {
+        location,
+        mutability: Mutability::Write,
+        extension: Extension::None,
+    }
+}
+
 /// An abbreviated constructor for a "read" operand that is sign-extended to 64
 /// bits (quadword).
 ///
@@ -330,6 +340,7 @@ pub enum OperandKind {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Mutability {
     Read,
+    Write,
     ReadWrite,
 }
 
@@ -340,6 +351,7 @@ impl Mutability {
     pub fn is_read(&self) -> bool {
         match self {
             Mutability::Read | Mutability::ReadWrite => true,
+            Mutability::Write => false,
         }
     }
 
@@ -349,6 +361,7 @@ impl Mutability {
     pub fn is_write(&self) -> bool {
         match self {
             Mutability::Read => false,
+            Mutability::Write => true,
             Mutability::ReadWrite => true,
         }
     }
@@ -364,6 +377,7 @@ impl core::fmt::Display for Mutability {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Read => write!(f, "r"),
+            Self::Write => write!(f, "w"),
             Self::ReadWrite => write!(f, "rw"),
         }
     }

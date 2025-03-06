@@ -50,6 +50,7 @@ pub mod isle;
 mod mem;
 mod reg;
 mod rex;
+mod vex;
 mod xmm;
 
 #[cfg(any(test, feature = "fuzz"))]
@@ -83,6 +84,7 @@ pub use mem::{
 };
 pub use reg::{Gpr, NonRspGpr, Size};
 pub use rex::RexFlags;
+//pub use vex::VexFlags;
 pub use xmm::Xmm;
 
 /// List the files generated to create this assembler.

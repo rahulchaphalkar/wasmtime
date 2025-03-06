@@ -27,12 +27,13 @@ impl dsl::Operand {
     }
 
     #[must_use]
-    pub fn generate_mut_ty(&self, read_ty: &str, read_write_ty: &str) -> Option<String> {
+    pub fn generate_mut_ty(&self, read_ty: &str, read_write_ty: &str, write_ty: &str) -> Option<String> {
         use dsl::Mutability::*;
         use dsl::OperandKind::*;
         let pick_ty = match self.mutability {
             Read => read_ty,
             ReadWrite => read_write_ty,
+            Write => write_ty,
         };
         match self.location.kind() {
             FixedReg(_) => None,
@@ -129,21 +130,21 @@ impl dsl::Operand {
             OperandKind::Reg(r) => match r.bits() {
                 128 => Some(match self.mutability {
                     Mutability::Read => "cranelift_assembler_x64::Xmm::new",
-                    Mutability::ReadWrite => "self.convert_xmm_to_assembler_read_write_xmm",
+                    Mutability::ReadWrite | Mutability::Write => "self.convert_xmm_to_assembler_read_write_xmm",
                 }),
                 _ => Some(match self.mutability {
                     Mutability::Read => "cranelift_assembler_x64::Gpr::new",
-                    Mutability::ReadWrite => "self.convert_gpr_to_assembler_read_write_gpr",
+                    Mutability::ReadWrite | Mutability::Write => "self.convert_gpr_to_assembler_read_write_gpr",
                 }),
             },
             OperandKind::RegMem(rm) => match rm.bits() {
                 128 => Some(match self.mutability {
                     Mutability::Read => "self.convert_xmm_mem_to_assembler_read_xmm_mem",
-                    Mutability::ReadWrite => "self.convert_xmm_mem_to_assembler_read_write_xmm_mem",
+                    Mutability::ReadWrite | Mutability::Write => "self.convert_xmm_mem_to_assembler_read_write_xmm_mem",
                 }),
                 _ => Some(match self.mutability {
                     Mutability::Read => "self.convert_gpr_mem_to_assembler_read_gpr_mem",
-                    Mutability::ReadWrite => "self.convert_gpr_mem_to_assembler_read_write_gpr_mem",
+                    Mutability::ReadWrite | Mutability::Write => "self.convert_gpr_mem_to_assembler_read_write_gpr_mem",
                 }),
             },
             OperandKind::FixedReg(_) | OperandKind::Imm(_) => None,
@@ -229,7 +230,7 @@ impl dsl::Mutability {
     pub fn generate_regalloc_call(&self) -> &str {
         match self {
             dsl::Mutability::Read => "read",
-            dsl::Mutability::ReadWrite => "read_write",
+            dsl::Mutability::ReadWrite | dsl::Mutability::Write => "read_write",
         }
     }
 
@@ -237,7 +238,7 @@ impl dsl::Mutability {
     pub fn generate_type(&self) -> &str {
         match self {
             dsl::Mutability::Read => "Read",
-            dsl::Mutability::ReadWrite => "ReadWrite",
+            dsl::Mutability::ReadWrite | dsl::Mutability::Write => "ReadWrite",
         }
     }
 
@@ -245,7 +246,7 @@ impl dsl::Mutability {
     pub fn generate_xmm_regalloc_call(&self) -> &str {
         match self {
             dsl::Mutability::Read => "read_xmm",
-            dsl::Mutability::ReadWrite => "read_write_xmm",
+            dsl::Mutability::ReadWrite | dsl::Mutability::Write => "read_write_xmm",
         }
     }
 }

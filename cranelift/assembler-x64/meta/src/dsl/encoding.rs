@@ -32,8 +32,16 @@ pub fn rex(opcode: impl Into<Opcodes>) -> Rex {
 
 /// An abbreviated constructor for VEX-encoded instructions.
 #[must_use]
-pub fn vex() -> Vex {
-    Vex {}
+pub fn vex(opcode: impl Into<Opcodes>) -> Vex {
+    Vex {
+        opcodes: opcode.into(),
+        w: false,
+        r: false,
+        digit: None,
+        imm: Imm::None,
+        l: VexVectorLength::default(),
+        pp: 0,
+    }
 }
 
 /// Enumerate the ways x64 encodes instructions.
@@ -57,7 +65,7 @@ impl fmt::Display for Encoding {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Encoding::Rex(rex) => write!(f, "{rex}"),
-            Encoding::Vex(_vex) => todo!(),
+            Encoding::Vex(vex) => write!(f, "{vex}"),
         }
     }
 }
@@ -397,6 +405,20 @@ impl LegacyPrefix {
             LegacyPrefix::NoPrefix | LegacyPrefix::_F0 | LegacyPrefix::_F2 | LegacyPrefix::_F3 => false,
         }
     }
+
+    /// Emit the legacy prefix as Vex.pp bits.
+    #[must_use]
+    pub fn pp_bits(&self) -> u8 {
+        match self {
+            Self::NoPrefix => 0b00,
+            Self::_66 => 0b01,
+            Self::_F3 => 0b10,
+            Self::_F2 => 0b11,
+            _ => panic!(
+                "VEX and EVEX pp bits can only be extracted from single prefixes: None, 66, F3, F2"
+            ),
+        }
+    }
 }
 
 impl TryFrom<u8> for LegacyPrefix {
@@ -446,10 +468,127 @@ impl fmt::Display for Imm {
     }
 }
 
-pub struct Vex {}
+pub struct Vex {
+        /// The opcodes for this instruction.
+    ///
+    /// Multi-byte opcodes are handled by passing an array of opcodes (including
+    /// prefixes like `0x66` and escape bytes like `0x0f`) to the constructor.
+    /// E.g., `66 0F 54` (`ANDPD`) is expressed as follows:
+    ///
+    /// ```
+    /// # use cranelift_assembler_x64_meta::dsl::vex;
+    /// let enc = vex([0x66, 0x0f, 0x54]);
+    /// ```
+    pub opcodes: Opcodes,
+    /// Indicates setting the REX.W bit.
+    ///
+    /// From the reference manual: "Indicates the use of a REX prefix that
+    /// affects operand size or instruction semantics. The ordering of the REX
+    /// prefix and other optional/mandatory instruction prefixes are discussed
+    /// in chapter 2. Note that REX prefixes that promote legacy instructions to
+    /// 64-bit behavior are not listed explicitly in the opcode column."
+    pub w: bool,
+    /// From the reference manual: "indicates that the ModR/M byte of the
+    /// instruction contains a register operand and an r/m operand."
+    pub r: bool,
+    /// From the reference manual: "a digit between 0 and 7 indicates that the
+    /// ModR/M byte of the instruction uses only the r/m (register or memory)
+    /// operand. The reg field contains the digit that provides an extension to
+    /// the instruction's opcode."
+    pub digit: Option<u8>,
+    /// The number of bits used as an immediate operand to the instruction.
+    ///
+    /// From the reference manual: "a 1-byte (ib), 2-byte (iw), 4-byte (id) or
+    /// 8-byte (io) immediate operand to the instruction that follows the
+    /// opcode, ModR/M bytes or scale-indexing bytes. The opcode determines if
+    /// the operand is a signed value. All words, doublewords, and quadwords are
+    /// given with the low-order byte first."
+    pub imm: Imm,
+    /// Length, 128 or 256 bits.
+    pub l: VexVectorLength,
+    /// Vex.pp field for SSE instructions.
+    pub pp: u8,
+}
 
 impl Vex {
+    /// Set the `REX.W` bit.
+    #[must_use]
+    pub fn w(self) -> Self {
+        Self { w: true, ..self }
+    }
+
+    /// Set the ModR/M byte to contain a register operand and an r/m operand;
+    /// equivalent to `/r` in the reference manual.
+    #[must_use]
+    pub fn r(self) -> Self {
+        Self { r: true, ..self }
+    }
+
     fn validate(&self) {
-        todo!()
+        //todo!()
+    }
+
+}
+
+/// The VEX format allows choosing a vector length in the `L` bit.
+#[allow(dead_code, missing_docs)] // Wider-length vectors are not yet used.
+pub enum VexVectorLength {
+    V128,
+    V256,
+}
+
+impl VexVectorLength {
+    /// Encode the `L` bit.
+    fn bits(&self) -> u8 {
+        match self {
+            Self::V128 => 0b0,
+            Self::V256 => 0b1,
+        }
+    }
+}
+
+impl Default for VexVectorLength {
+    fn default() -> Self {
+        Self::V128
+    }
+}
+
+impl fmt::Display for Vex {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self.opcodes.prefix {
+            LegacyPrefix::NoPrefix => {}
+            LegacyPrefix::_66 => write!(f, "0x66 + ")?,
+            LegacyPrefix::_F0 => write!(f, "0xF0 + ")?,
+            LegacyPrefix::_66F0 => write!(f, "0x66 0xF0 + ")?,
+            LegacyPrefix::_F2 => write!(f, "0xF2 + ")?,
+            LegacyPrefix::_F3 => write!(f, "0xF3 + ")?,
+            LegacyPrefix::_66F3 => write!(f, "0x66 0xF3 + ")?,
+        }
+        if self.w {
+            write!(f, "VEX.W + ")?;
+        }
+        if self.opcodes.escape {
+            write!(f, "0x0F + ")?;
+        }
+        write!(f, "{:#04x}", self.opcodes.primary)?;
+        if let Some(secondary) = self.opcodes.secondary {
+            write!(f, " {secondary:#04x}")?;
+        }
+        if self.r {
+            write!(f, " /r")?;
+        }
+        if let Some(digit) = self.digit {
+            write!(f, " /{digit}")?;
+        }
+        if self.imm != Imm::None {
+            write!(f, " {}", self.imm)?;
+        }
+        Ok(())
+    }
+}
+
+impl From<Vex> for Encoding {
+    fn from(vex: Vex) -> Encoding {
+        Encoding::Vex(vex)
     }
 }

@@ -127,7 +127,7 @@ impl dsl::Inst {
 
         match &self.encoding {
             dsl::Encoding::Rex(rex) => self.format.generate_rex_encoding(f, rex),
-            dsl::Encoding::Vex(_) => todo!(),
+            dsl::Encoding::Vex(vex) => self.format.generate_rex_encoding(f, vex),
         }
 
         f.indent_pop();
@@ -302,7 +302,7 @@ impl dsl::Inst {
                 [] => fmtln!(f, "SideEffectNoResult::Inst(inst)"),
                 [one] => match one.mutability {
                     Read => unreachable!(),
-                    ReadWrite => match one.location.kind() {
+                    ReadWrite | Write => match one.location.kind() {
                         OperandKind::Imm(_) => unreachable!(),
                         // FIXME(#10238)
                         OperandKind::FixedReg(_) => fmtln!(f, "todo!()"),
