@@ -47,11 +47,13 @@ pub mod wit {
         // Many classifiers have a single input; currently, this test suite also
         // uses tensors of the same shape, though this is not usually the case.
         let tensor = Tensor::new(&vec![1, 3, 224, 224], TensorType::Fp32, &input.1);
-        context.set_input(input.0, tensor).map_err(err_as_anyhow)?;
-        println!("[nn] set input tensor: {} bytes", input.1.len());
+        //context.set_input(input.0, tensor).map_err(err_as_anyhow)?;
+        //println!("[nn] set input tensor: {} bytes", input.1.len());
 
         let before = Instant::now();
-        context.compute().map_err(err_as_anyhow)?;
+        //context.compute().map_err(err_as_anyhow)?;
+        let input_tuple = (input.0.to_string(), tensor);
+        let output_tensors = context.compute(vec!{input_tuple}).unwrap();
         println!(
             "[nn] executed graph inference in {} ms",
             before.elapsed().as_millis()
@@ -60,9 +62,11 @@ pub mod wit {
         // Many classifiers emit probabilities as floating point values; here we
         // convert the raw bytes to `f32` knowing all models used here use that
         // type.
-        let output = context.get_output(output).map_err(err_as_anyhow)?;
+        //let output = context.get_output(output).map_err(err_as_anyhow)?;
+        let output = &output_tensors[0].1;
         println!(
             "[nn] retrieved output tensor: {} bytes",
+            //output.data().len()
             output.data().len()
         );
         let output: Vec<f32> = output

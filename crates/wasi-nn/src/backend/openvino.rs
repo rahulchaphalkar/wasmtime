@@ -1,11 +1,13 @@
 //! Implements a `wasi-nn` [`BackendInner`] using OpenVINO.
 
 use super::{
-    read, BackendError, BackendExecutionContext, BackendFromDir, BackendGraph, BackendInner, Id,
+    read, BackendError, BackendExecutionContext, BackendFromDir, BackendGraph, BackendInner, Id, NamedTensor,
 };
 use crate::wit::{ExecutionTarget, GraphEncoding, Tensor, TensorType};
+//use crate::wit::types::NamedTensor;
 use crate::{ExecutionContext, Graph};
 use openvino::{DeviceType, ElementType, InferenceError, SetupError, Shape, Tensor as OvTensor};
+use wasmtime::component::Resource;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 
@@ -80,57 +82,114 @@ impl BackendGraph for OpenvinoGraph {
         let mut compiled_model = self.0.lock().unwrap();
         let infer_request = compiled_model.create_infer_request()?;
         let box_: Box<dyn BackendExecutionContext> =
-            Box::new(OpenvinoExecutionContext(infer_request));
+            Box::new(OpenvinoExecutionContext(infer_request, self.0.clone()));
         Ok(box_.into())
     }
 }
 
-struct OpenvinoExecutionContext(openvino::InferRequest);
+struct OpenvinoExecutionContext(openvino::InferRequest, Arc<Mutex<openvino::CompiledModel>>);
 
 impl BackendExecutionContext for OpenvinoExecutionContext {
-    fn set_input(&mut self, id: Id, tensor: &Tensor) -> Result<(), BackendError> {
-        // Construct the tensor.
-        let precision = tensor.ty.into();
-        let dimensions = tensor
-            .dimensions
-            .iter()
-            .map(|&d| d as i64)
-            .collect::<Vec<_>>();
-        let shape = Shape::new(&dimensions)?;
-        let mut new_tensor = OvTensor::new(precision, &shape)?;
-        let buffer = new_tensor.get_raw_data_mut()?;
-        buffer.copy_from_slice(&tensor.data);
-        // Assign the tensor to the request.
-        match id {
-            Id::Index(i) => self.0.set_input_tensor_by_index(i as usize, &new_tensor)?,
-            Id::Name(name) => self.0.set_tensor(&name, &new_tensor)?,
-        };
-        Ok(())
-    }
+    // fn set_input(&mut self, id: Id, tensor: &Tensor) -> Result<(), BackendError> {
+    //     // Construct the tensor.
+    //     let precision = tensor.ty.into();
+    //     let dimensions = tensor
+    //         .dimensions
+    //         .iter()
+    //         .map(|&d| d as i64)
+    //         .collect::<Vec<_>>();
+    //     let shape = Shape::new(&dimensions)?;
+    //     let mut new_tensor = OvTensor::new(precision, &shape)?;
+    //     let buffer = new_tensor.get_raw_data_mut()?;
+    //     buffer.copy_from_slice(&tensor.data);
+    //     // Assign the tensor to the request.
+    //     match id {
+    //         Id::Index(i) => self.0.set_input_tensor_by_index(i as usize, &new_tensor)?,
+    //         Id::Name(name) => self.0.set_tensor(&name, &new_tensor)?,
+    //     };
+    //     Ok(())
+    // }
 
-    fn compute(&mut self) -> Result<(), BackendError> {
+    // fn compute(&mut self) -> Result<(), BackendError> {
+    //     self.0.infer()?;
+    //     Ok(())
+    // }
+
+    // fn get_output(&mut self, id: Id) -> Result<Tensor, BackendError> {
+    //     let output_name = match id {
+    //         Id::Index(i) => self.0.get_output_tensor_by_index(i as usize)?,
+    //         Id::Name(name) => self.0.get_tensor(&name)?,
+    //     };
+    //     let dimensions = output_name
+    //         .get_shape()?
+    //         .get_dimensions()
+    //         .iter()
+    //         .map(|&dim| dim as u32)
+    //         .collect::<Vec<u32>>();
+    //     let ty = output_name.get_element_type()?.try_into()?;
+    //     let data = output_name.get_raw_data()?.to_vec();
+    //     Ok(Tensor {
+    //         dimensions,
+    //         ty,
+    //         data,
+    //     })
+    // }
+    fn compute(&mut self, inputs: Vec<NamedTensor>) -> Result<Vec<NamedTensor>, BackendError> {
+        for NamedTensor{name, tensor} in inputs {
+            let precision = tensor.ty.into();
+            let dimensions = tensor
+                .dimensions
+                .iter()
+                .map(|&d| d as i64)
+                .collect::<Vec<_>>();
+            let shape = Shape::new(&dimensions)?;
+            let mut new_tensor = OvTensor::new(precision, &shape)?;
+            let buffer = new_tensor.get_raw_data_mut()?;
+            buffer.copy_from_slice(&tensor.data);
+    
+            // Assign the tensor to the request
+            if name.is_empty() {
+                // If the name is empty, assume it's an index-based tensor
+                let index: usize = name.parse().unwrap_or(0); // Handle parsing if needed
+                self.0.set_input_tensor_by_index(index, &new_tensor)?;
+            } else {
+                // Otherwise, use the name
+                self.0.set_tensor(&name, &new_tensor)?;
+            }
+        }
+    
         self.0.infer()?;
-        Ok(())
-    }
-
-    fn get_output(&mut self, id: Id) -> Result<Tensor, BackendError> {
-        let output_name = match id {
-            Id::Index(i) => self.0.get_output_tensor_by_index(i as usize)?,
-            Id::Name(name) => self.0.get_tensor(&name)?,
-        };
-        let dimensions = output_name
-            .get_shape()?
-            .get_dimensions()
-            .iter()
-            .map(|&dim| dim as u32)
-            .collect::<Vec<u32>>();
-        let ty = output_name.get_element_type()?.try_into()?;
-        let data = output_name.get_raw_data()?.to_vec();
-        Ok(Tensor {
-            dimensions,
-            ty,
-            data,
-        })
+    //---------------------------------------------
+        let compiled_model = self.1.lock().unwrap();
+        let output_count = compiled_model.get_output_size()?;
+        let mut outputs = Vec::<NamedTensor>::new();
+        for i in 0..output_count {
+            let output_tensor = self.0.get_output_tensor_by_index(i)?;
+            let dimensions = output_tensor
+                .get_shape()?
+                .get_dimensions()
+                .iter()
+                .map(|&dim| dim as u32)
+                .collect::<Vec<u32>>();
+            let ty = output_tensor.get_element_type()?.try_into()?;
+            let data = output_tensor.get_raw_data()?.to_vec();
+    
+            // outputs.push((i.to_string(), self.table.push(Tensor {
+            //     ty,
+            //     dimensions,
+            //     data,
+            // })?));
+            outputs.push(NamedTensor {
+                name: i.to_string(),
+                tensor: Tensor {
+                    ty,
+                    dimensions,
+                    data,
+                },
+            });
+        }
+    
+        Ok(outputs)
     }
 }
 

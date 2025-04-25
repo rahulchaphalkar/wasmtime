@@ -26,6 +26,7 @@ use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 use thiserror::Error;
+use wasmtime::component::Resource;
 use wiggle::GuestError;
 
 /// Return a list of all available backend frameworks.
@@ -78,9 +79,10 @@ pub trait BackendGraph: Send + Sync {
 /// A [BackendExecutionContext] performs the actual inference; this is the
 /// backing implementation for a user-facing execution context.
 pub trait BackendExecutionContext: Send + Sync {
-    fn set_input(&mut self, id: Id, tensor: &Tensor) -> Result<(), BackendError>;
-    fn compute(&mut self) -> Result<(), BackendError>;
-    fn get_output(&mut self, id: Id) -> Result<Tensor, BackendError>;
+    // fn set_input(&mut self, id: Id, tensor: &Tensor) -> Result<(), BackendError>;
+    //fn compute(&mut self, inputs: Vec<NamedTensor>) -> Result<Vec<NamedTensor>, BackendError>;
+    fn compute(&mut self, inputs: Vec<NamedTensor>) -> Result<Vec<NamedTensor>, BackendError>;
+    // fn get_output(&mut self, id: Id) -> Result<Tensor, BackendError>;
 }
 
 /// An identifier for a tensor in a [Graph].
@@ -127,4 +129,10 @@ fn read(path: &Path) -> anyhow::Result<Vec<u8>> {
     let mut buffer = vec![];
     file.read_to_end(&mut buffer)?;
     Ok(buffer)
+}
+
+/// A host-side named tensor.
+pub struct NamedTensor {
+    pub name: String,
+    pub tensor: Tensor,
 }

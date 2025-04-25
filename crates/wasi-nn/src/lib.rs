@@ -1,13 +1,14 @@
 pub mod backend;
 mod registry;
 pub mod wit;
-pub mod witx;
+//pub mod witx;
 
 use anyhow::anyhow;
 use core::fmt;
 pub use registry::{GraphRegistry, InMemoryRegistry};
 use std::path::Path;
 use std::sync::Arc;
+use wasmtime::component::Resource;
 
 /// Construct an in-memory registry from the available backends and a list of
 /// `(<backend name>, <graph directory>)`. This assumes graphs can be loaded
@@ -83,6 +84,12 @@ impl fmt::Debug for Tensor {
             .finish()
     }
 }
+
+// /// A host-side named tensor.
+// pub struct NamedTensor {
+//     pub name: String,
+//     pub tensor: Resource<Tensor>,
+// }
 
 /// A backend-defined execution context.
 pub struct ExecutionContext(Box<dyn backend::BackendExecutionContext>);
