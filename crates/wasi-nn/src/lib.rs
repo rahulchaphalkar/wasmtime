@@ -133,7 +133,7 @@ impl ExecutionContext {
     }
 
     pub fn compute(&mut self) -> Result<(), BackendError> {
-        self.0.compute()
+        self.0.compute(None).map(|_| ())
     }
 
     pub fn get_output(&mut self, id: Id) -> Result<Tensor, BackendError> {
@@ -144,7 +144,10 @@ impl ExecutionContext {
         &mut self,
         inputs: Vec<BackendNamedTensor>,
     ) -> Result<Vec<BackendNamedTensor>, BackendError> {
-        self.0.compute_with_io(inputs)
+        match self.0.compute(Some(inputs))? {
+            Some(outputs) => Ok(outputs),
+            None => Ok(Vec::new()),
+        }
     }
 }
 

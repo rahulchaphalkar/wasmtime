@@ -40,14 +40,14 @@ pub mod wit {
 
     /// Run a wasi-nn inference using a simple classifier model (single input,
     /// single output).
-    pub fn classify(graph: Graph, input: (&str, Vec<u8>), output: &str) -> Result<Vec<f32>> {
+    pub fn classify(graph: Graph, input: (&str, Vec<u8>)) -> Result<Vec<f32>> {
         let context = graph.init_execution_context().map_err(err_as_anyhow)?;
         println!("[nn] created wasi-nn execution context with ID: {context:?}");
 
         // Many classifiers have a single input; currently, this test suite also
         // uses tensors of the same shape, though this is not usually the case.
         let tensor = Tensor::new(&vec![1, 3, 224, 224], TensorType::Fp32, &input.1);
-        //println!("[nn] set input tensor: {} bytes", input.1.len());
+        println!("[nn] input tensor: {} bytes", input.1.len());
 
         let before = Instant::now();
         let input_tuple = (input.0.to_string(), tensor);

@@ -80,14 +80,13 @@ pub trait BackendGraph: Send + Sync {
 pub trait BackendExecutionContext: Send + Sync {
     // WITX functions
     fn set_input(&mut self, id: Id, tensor: &Tensor) -> Result<(), BackendError>;
-    fn compute(&mut self) -> Result<(), BackendError>;
     fn get_output(&mut self, id: Id) -> Result<Tensor, BackendError>;
 
-    // WIT functions
-    fn compute_with_io(
+    // Functions which work for both WIT and WITX
+    fn compute(
         &mut self,
-        inputs: Vec<NamedTensor>,
-    ) -> Result<Vec<NamedTensor>, BackendError>;
+        inputs: Option<Vec<NamedTensor>>,
+    ) -> Result<Option<Vec<NamedTensor>>, BackendError>;
 }
 
 /// An identifier for a tensor in a [Graph].
