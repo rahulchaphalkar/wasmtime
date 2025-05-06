@@ -1,5 +1,5 @@
 use super::{artifacts_dir, download, DOWNLOAD_LOCK};
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result};
 use std::{env, fs};
 
 /// Return `Ok` if we find the cached MobileNet test artifacts; this will
