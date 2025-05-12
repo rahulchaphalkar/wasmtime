@@ -2,8 +2,8 @@
 
 mod add;
 mod and;
-mod neg;
 mod cmp;
+mod neg;
 mod or;
 mod shld;
 mod sub;

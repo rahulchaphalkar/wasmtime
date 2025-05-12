@@ -1,4 +1,4 @@
-use crate::dsl::{fmt, inst, r, w, rex, rw, sxl, sxq, sxw};
+use crate::dsl::{fmt, inst, r, rex, rw, sxl, sxq, sxw, w};
 use crate::dsl::{Feature::*, Inst, Location::*};
 
 #[rustfmt::skip] // Keeps instructions on a single line.

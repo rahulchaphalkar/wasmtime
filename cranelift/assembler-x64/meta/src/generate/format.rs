@@ -137,7 +137,7 @@ impl dsl::Format {
             | [Mem(mem), Reg(reg)]
             | [RegMem(mem), Reg(reg)]
             | [RegMem(mem), Reg(reg), Imm(_)]
-            | [RegMem(mem), Reg(reg), FixedReg(_)] 
+            | [RegMem(mem), Reg(reg), FixedReg(_)]
             | [Reg(reg), RegMem(mem), Imm(_)] => {
                 fmtln!(f, "let reg = self.{reg}.enc();");
                 fmtln!(f, "self.{mem}.encode_rex_suffixes(buf, off, reg, 0);");
