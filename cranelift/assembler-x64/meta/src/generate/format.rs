@@ -104,6 +104,10 @@ impl dsl::Format {
                 fmtln!(f, "let src = self.{src}.enc();");
                 fmtln!(f, "let rex = self.{dst}.as_rex_prefix(src, {bits});");
             }
+            [Reg(src1), RegMem(src2), Imm(_)] => {
+                fmtln!(f, "let src = self.{src1}.enc();");
+                fmtln!(f, "let rex = self.{src2}.as_rex_prefix(src, {bits});");
+            }
             unknown => unimplemented!("unknown pattern: {unknown:?}"),
         }
 
@@ -133,13 +137,16 @@ impl dsl::Format {
             | [Mem(mem), Reg(reg)]
             | [RegMem(mem), Reg(reg)]
             | [RegMem(mem), Reg(reg), Imm(_)]
-            | [RegMem(mem), Reg(reg), FixedReg(_)] => {
+            | [RegMem(mem), Reg(reg), FixedReg(_)] 
+            | [Reg(reg), RegMem(mem), Imm(_)] => {
                 fmtln!(f, "let reg = self.{reg}.enc();");
                 fmtln!(f, "self.{mem}.encode_rex_suffixes(buf, off, reg, 0);");
             }
             unknown => unimplemented!("unknown pattern: {unknown:?}"),
         }
     }
+    
+    
 
     fn generate_immediate(&self, f: &mut Formatter) {
         use dsl::OperandKind::Imm;

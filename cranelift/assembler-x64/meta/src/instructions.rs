@@ -7,6 +7,7 @@ mod or;
 mod shld;
 mod sub;
 mod xor;
+mod cmp;
 
 use crate::dsl::Inst;
 
@@ -20,5 +21,6 @@ pub fn list() -> Vec<Inst> {
     all.extend(shld::list());
     all.extend(sub::list());
     all.extend(xor::list());
+    all.extend(cmp::list());
     all
 }
