@@ -236,6 +236,8 @@ impl From<Location> for Operand {
 }
 
 /// The kind of register used in a [`Location`].
+#[derive(PartialEq)]
+
 pub enum RegClass {
     Gpr,
     Xmm,

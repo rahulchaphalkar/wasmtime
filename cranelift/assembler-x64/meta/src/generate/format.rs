@@ -116,6 +116,10 @@ impl dsl::Format {
                 fmtln!(f, "let src = self.{src}.enc();");
                 fmtln!(f, "let rex = self.{dst}.as_rex_prefix(src, {bits});");
             }
+            [Reg(src1), RegMem(src2), Imm(_)] => {
+                fmtln!(f, "let src = self.{src1}.enc();");
+                fmtln!(f, "let rex = self.{src2}.as_rex_prefix(src, {bits});");
+            }
             unknown => unimplemented!("unknown pattern: {unknown:?}"),
         }
 
@@ -180,7 +184,8 @@ impl dsl::Format {
             }
             [RegMem(dst), Reg(src)]
             | [RegMem(dst), Reg(src), Imm(_)]
-            | [RegMem(dst), Reg(src), FixedReg(_)] => {
+            | [RegMem(dst), Reg(src), FixedReg(_)]
+            | [Reg(src), RegMem(dst), Imm(_)] => {
                 fmtln!(f, "let {src} = self.{src}.enc();");
                 f.add_block(&format!("match &self.{dst}"), |f| {
                     match src.bits() {
@@ -195,9 +200,18 @@ impl dsl::Format {
                     };
                 });
             }
+//             [Reg(src1), RegMem(src2), Imm(dsl::Location::imm8)] => {
+//                 fmtln!(f, "let {src1} = self.{src1}.enc();");
+//                 f.add_block(&format!("match &self.{src2}"), |f| {
+//                             fmtln!(f, "XmmMem::Xmm({src2}) => emit_modrm(buf, {src1}, {src2}.enc()),");
+//                             fmtln!(f, "XmmMem::Mem({src2}) => emit_modrm_sib_disp(buf, off, {src1}, {src2}, 0,None),");
+// });
+//             }
             unknown => unimplemented!("unknown pattern: {unknown:?}"),
         }
     }
+    
+    
 
     fn generate_immediate(&self, f: &mut Formatter) {
         use dsl::OperandKind::Imm;
