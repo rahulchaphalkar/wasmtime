@@ -200,13 +200,7 @@ impl dsl::Format {
                     };
                 });
             }
-            //             [Reg(src1), RegMem(src2), Imm(dsl::Location::imm8)] => {
-            //                 fmtln!(f, "let {src1} = self.{src1}.enc();");
-            //                 f.add_block(&format!("match &self.{src2}"), |f| {
-            //                             fmtln!(f, "XmmMem::Xmm({src2}) => emit_modrm(buf, {src1}, {src2}.enc()),");
-            //                             fmtln!(f, "XmmMem::Mem({src2}) => emit_modrm_sib_disp(buf, off, {src1}, {src2}, 0,None),");
-            // });
-            //             }
+          }
             unknown => unimplemented!("unknown pattern: {unknown:?}"),
         }
     }
