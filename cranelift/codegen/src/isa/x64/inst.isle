@@ -881,7 +881,7 @@
             Comiss
             Comisd
             Cmpps
-            Cmppd
+            ;;Cmppd
             Cmpss
             Cmpsd
             Cvtdq2ps
@@ -4152,18 +4152,19 @@
 ;; operations, since this presumably induces the correct encoding of the
 ;; instruction.
 (decl x64_cmppd (Xmm XmmMem FcmpImm) Xmm)
-(rule 0 (x64_cmppd src1 src2 imm)
-      (xmm_rm_r_imm (SseOpcode.Cmppd)
-                    src1
-                    src2
-                    (encode_fcmp_imm imm)
-                    (OperandSize.Size32)))
+;; (rule 0 (x64_cmppd src1 src2 imm)
+;;      (xmm_rm_r_imm (SseOpcode.Cmppd)
+;;                    src1
+;;                    src2
+;;                    (encode_fcmp_imm imm)
+;;                    (OperandSize.Size32)))
 (rule 1 (x64_cmppd src1 src2 imm)
       (if-let true (use_avx))
       (xmm_rmr_imm_vex (AvxOpcode.Vcmppd)
                        src1
                        src2
                        (encode_fcmp_imm imm)))
+(rule 0 (x64_cmppd src1 src2 imm) (x64_cmppd_a src1 src2 (encode_fcmp_imm imm)))
 
 ;; Helper for creating `pinsrb` instructions.
 (decl x64_pinsrb (Xmm GprMem u8) Xmm)
