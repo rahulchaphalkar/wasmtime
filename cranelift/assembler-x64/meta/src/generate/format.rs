@@ -145,8 +145,6 @@ impl dsl::Format {
             unknown => unimplemented!("unknown pattern: {unknown:?}"),
         }
     }
-    
-    
 
     fn generate_immediate(&self, f: &mut Formatter) {
         use dsl::OperandKind::Imm;

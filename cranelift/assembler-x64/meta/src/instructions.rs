@@ -3,11 +3,11 @@
 mod add;
 mod and;
 mod neg;
+mod cmp;
 mod or;
 mod shld;
 mod sub;
 mod xor;
-mod cmp;
 
 use crate::dsl::Inst;
 

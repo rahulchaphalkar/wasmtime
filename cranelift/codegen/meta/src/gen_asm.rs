@@ -123,7 +123,7 @@ pub fn generate_macro_inst_fn(f: &mut Formatter, inst: &Inst) {
 
             use cranelift_assembler_x64_meta::dsl::Mutability::*;
             match results.as_slice() {
-                [] => fmtln!(f, "SideEffectNoResult::Inst(inst)"),
+                [] => fmtln!(f, "AssemblerOutputs::NoReturn {{ inst }}"),
                 [one] => match one.mutability {
                     Read => unreachable!(),
                     Write => match one.location.kind() {
@@ -241,6 +241,9 @@ pub enum IsleConstructor {
     /// This constructor produces an `Xmm` value, meaning that it will write the
     /// result to an `Xmm`.
     RetXmm,
+
+    /// This constructor doesn't produce any return value.
+    RetNoReturn,
 }
 
 impl IsleConstructor {
@@ -250,6 +253,7 @@ impl IsleConstructor {
             IsleConstructor::RetMemorySideEffect => "SideEffectNoResult",
             IsleConstructor::RetGpr => "Gpr",
             IsleConstructor::RetXmm => "Xmm",
+            IsleConstructor::RetNoReturn => "SideEffectNoResult",
         }
     }
 
@@ -260,6 +264,7 @@ impl IsleConstructor {
             IsleConstructor::RetMemorySideEffect => "defer_side_effect",
             IsleConstructor::RetGpr => "emit_ret_gpr",
             IsleConstructor::RetXmm => "emit_ret_xmm",
+            IsleConstructor::RetNoReturn => "defer_no_return",
         }
     }
 
@@ -269,6 +274,7 @@ impl IsleConstructor {
             IsleConstructor::RetMemorySideEffect => "_mem",
             IsleConstructor::RetGpr => "",
             IsleConstructor::RetXmm => "",
+            IsleConstructor::RetNoReturn => "_no_return",
         }
     }
 }
@@ -285,6 +291,7 @@ pub fn isle_param_for_ctor(op: &Operand, ctor: IsleConstructor) -> String {
             IsleConstructor::RetMemorySideEffect => "Amode".to_string(),
             IsleConstructor::RetGpr => "Gpr".to_string(),
             IsleConstructor::RetXmm => "Xmm".to_string(),
+            IsleConstructor::RetNoReturn => "SideEffectNoResult".to_string(),
         },
 
         // everything else is the same as the "raw" variant
@@ -307,7 +314,7 @@ pub fn isle_constructors(format: &Format) -> Vec<IsleConstructor> {
         .filter(|o| o.mutability.is_write())
         .collect::<Vec<_>>();
     match &write_operands[..] {
-            [] => unimplemented!("if you truly need this (and not a `SideEffect*`), add a `NoReturn` variant to `AssemblerOutputs`"),
+            [] => vec![IsleConstructor::RetNoReturn],
             [one] => match one.mutability {
                 Read => unreachable!(),
                 ReadWrite | Write => match one.location.kind() {
@@ -328,8 +335,8 @@ pub fn isle_constructors(format: &Format) -> Vec<IsleConstructor> {
                     },
                 }
             },
-            other => panic!("unsupported number of write operands {other:?}"),
-        }
+        other => panic!("unsupported number of write operands {other:?}"),
+    }
 }
 
 /// Generate a "raw" constructor that simply constructs, but does not emit
@@ -427,6 +434,11 @@ pub fn generate_isle(f: &mut Formatter, insts: &[Inst]) {
     fmtln!(f, "    ;; Used for instructions that return an");
     fmtln!(f, "    ;; XMM register.");
     fmtln!(f, "    (RetXmm (inst MInst) (xmm Xmm))");
+    fmtln!(
+        f,
+        "    ;; Used for instructions that do not return anything."
+    );
+    fmtln!(f, "    (NoReturn (inst MInst))");
     fmtln!(f, "    ;; TODO: eventually add more variants for");
     fmtln!(f, "    ;; multi-return, XMM, etc.; see");
     fmtln!(
@@ -458,6 +470,17 @@ pub fn generate_isle(f: &mut Formatter, insts: &[Inst]) {
     fmtln!(
         f,
         "(rule (defer_side_effect (AssemblerOutputs.SideEffect inst))"
+    );
+    fmtln!(f, "    (SideEffectNoResult.Inst inst))");
+    f.empty_line();
+    fmtln!(f, ";; Pass along an instruction with no return value");
+    fmtln!(
+        f,
+        "(decl defer_no_return (AssemblerOutputs) SideEffectNoResult)"
+    );
+    fmtln!(
+        f,
+        "(rule (defer_no_return (AssemblerOutputs.NoReturn inst))"
     );
     fmtln!(f, "    (SideEffectNoResult.Inst inst))");
     f.empty_line();
