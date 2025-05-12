@@ -1,4 +1,4 @@
-use crate::dsl::{align, fmt, inst, r, rex, rw, sxl, sxq, sxw};
+use crate::dsl::{fmt, inst, r, w, rex, rw, sxl, sxq, sxw};
 use crate::dsl::{Feature::*, Inst, Location::*};
 
 #[rustfmt::skip] // Keeps instructions on a single line.
@@ -28,8 +28,8 @@ pub fn list() -> Vec<Inst> {
         inst("cmpps", fmt("A", [rw(xmm), r(xmm_m128), r(imm8)]), rex([0x0F, 0xC2]).r().ib(), _64b | compat | sse),
         inst("cmpsd", fmt("A", [rw(xmm), r(xmm_m64), r(imm8)]), rex([0x66, 0xF2, 0x0F, 0xC2]).r().ib(), _64b | compat | sse2),
         inst("cmpss", fmt("A", [rw(xmm), r(xmm_m32), r(imm8)]), rex([0xF3, 0x0F, 0xC2]).r().ib(), _64b | compat | sse),
-        // inst("comisd", fmt("A", [rw(xmm), r(xmm_m64)]), rex([0x66, 0x0F, 0x2F]).r(), _64b | compat | sse2), // Todo rw(xmm) to w(xmm)
-        // inst("comiss", fmt("A", [rw(xmm), r(xmm_m32)]), rex([0x0F, 0x2F]).r(), _64b | compat | sse), // Todo rw(xmm) to w(xmm)
+        inst("comisd", fmt("A", [w(xmm), r(xmm_m64)]), rex([0x66, 0x0F, 0x2F]).r(), _64b | compat | sse2),
+        inst("comiss", fmt("A", [w(xmm), r(xmm_m32)]), rex([0x0F, 0x2F]).r(), _64b | compat | sse),
         inst("ucomisd", fmt("A", [r(xmm), r(xmm_m64)]), rex([0x66, 0x0F, 0x2E]).r(), _64b | compat | sse2),
         inst("ucomiss", fmt("A", [r(xmm), r(xmm_m32)]), rex([0x0F, 0x2E]).r(), _64b | compat | sse),
     ]
