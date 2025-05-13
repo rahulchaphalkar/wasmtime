@@ -151,6 +151,11 @@ pub fn generate_macro_inst_fn(f: &mut Formatter, inst: &Inst) {
                         OperandKind::Mem(_) => {
                             fmtln!(f, "AssemblerOutputs::SideEffect {{ inst }}")
                         }
+                        // Special case for flag-producing instructions like ucomiss
+                        OperandKind::RegMem(rm) if rm.to_string() == "xmm_m32" 
+                        || rm.to_string() == "xmm_m64" => {
+                        fmtln!(f, "AssemblerOutputs::ProducesFlags {{ inst }}")
+                    },
                         // One read/write regmem output? We need to output
                         // everything and it'll internally disambiguate which was
                         // emitted (e.g. the mem variant or the register variant).
@@ -434,10 +439,9 @@ pub fn generate_isle(f: &mut Formatter, insts: &[Inst]) {
     fmtln!(f, "    ;; Used for instructions that return an");
     fmtln!(f, "    ;; XMM register.");
     fmtln!(f, "    (RetXmm (inst MInst) (xmm Xmm))");
-    fmtln!(
-        f,
-        "    ;; Used for instructions that do not return anything."
-    );
+    fmtln!(f, "    ;; Used for instructions that produce flags.");
+    fmtln!(f, "    (ProducesFlags (inst MInst))");
+    fmtln!(f, "    ;; Used for instructions that do not return anything.");
     fmtln!(f, "    (NoReturn (inst MInst))");
     fmtln!(f, "    ;; TODO: eventually add more variants for");
     fmtln!(f, "    ;; multi-return, XMM, etc.; see");
@@ -459,6 +463,12 @@ pub fn generate_isle(f: &mut Formatter, insts: &[Inst]) {
     fmtln!(f, "(decl emit_ret_xmm (AssemblerOutputs) Xmm)");
     fmtln!(f, "(rule (emit_ret_xmm (AssemblerOutputs.RetXmm inst xmm))");
     fmtln!(f, "    (let ((_ Unit (emit inst))) xmm))");
+    f.empty_line();
+
+    fmtln!(f, ";; Directly emit instructions that produce flags.");
+    fmtln!(f, "(decl emit_produces_flags (AssemblerOutputs) ProducesFlags)");
+    fmtln!(f, "(rule (emit_produces_flags (AssemblerOutputs.ProducesFlags inst))");
+    fmtln!(f, "    (let ((_ Unit (emit inst))) (ProducesFlags.ProducesFlagsSideEffect inst)))");
     f.empty_line();
 
     fmtln!(f, ";; Pass along the side-effecting instruction");

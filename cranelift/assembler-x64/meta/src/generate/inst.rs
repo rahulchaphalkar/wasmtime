@@ -200,7 +200,8 @@ impl dsl::Inst {
                             fmtln!(f, "let {location} = {to_string};");
                         }
 
-                        // Special case for the comparison instructions
+                        // Fix the mnemonic for comparison instructions: we want to print pseudo-ops without
+                        // the immediate operand.
                         if self.mnemonic.starts_with("cmp")
                             && ["cmppd", "cmpps", "cmpsd", "cmpss"]
                                 .contains(&self.mnemonic.as_str())
@@ -214,7 +215,7 @@ impl dsl::Inst {
                             f.add_block(
                                 &format!("let mnemonic = match self.{}.value()", imm_operand),
                                 |f| {
-                                    let suffix = &self.mnemonic[3..]; // "pd", "ps", "sd", or "ss"
+                                    let suffix = &self.mnemonic[3..];
                                     fmtln!(f, "0 => \"cmpeq{suffix}\",");
                                     fmtln!(f, "1 => \"cmplt{suffix}\",");
                                     fmtln!(f, "2 => \"cmple{suffix}\",");
@@ -227,8 +228,6 @@ impl dsl::Inst {
                                 },
                             );
                             fmtln!(f, ";");
-                            // Skip the immediate in the formatted output for pseudo-ops
-                            // Create operands with only the first two arguments for pseudo-ops
                             fmtln!(f, "let operands = if mnemonic != \"{}\" {{", self.mnemonic);
                             fmtln!(
                                 f,

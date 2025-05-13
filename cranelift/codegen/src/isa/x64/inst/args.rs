@@ -943,12 +943,10 @@ pub(crate) enum InstructionSet {
 pub enum SseOpcode {
     Blendvpd,
     Blendvps,
-    Comiss,
-    Comisd,
-    Cmpps,
-    Cmppd,
-    Cmpss,
-    Cmpsd,
+    //Comiss,
+    //Comisd,
+    //Cmpss,
+    //Cmpsd,
     Cvtdq2ps,
     Cvtdq2pd,
     Cvtpd2ps,
@@ -1099,10 +1097,10 @@ impl SseOpcode {
     pub(crate) fn available_from(&self) -> InstructionSet {
         use InstructionSet::*;
         match self {
-            SseOpcode::Comiss
-            | SseOpcode::Cmpps
-            | SseOpcode::Cmpss
-            | SseOpcode::Cvtsi2ss
+            //SseOpcode::Comiss
+            //| SseOpcode::Cmpps
+            //| SseOpcode::Cmpss
+            SseOpcode::Cvtsi2ss
             | SseOpcode::Cvtss2si
             | SseOpcode::Cvttss2si
             | SseOpcode::Divps
@@ -1127,9 +1125,9 @@ impl SseOpcode {
             | SseOpcode::Unpcklps
             | SseOpcode::Unpckhps => SSE,
 
-            SseOpcode::Cmppd
-            | SseOpcode::Cmpsd
-            | SseOpcode::Comisd
+            //SseOpcode::Cmppd
+            //SseOpcode::Cmpsd
+            //| SseOpcode::Comisd
             | SseOpcode::Cvtdq2ps
             | SseOpcode::Cvtdq2pd
             | SseOpcode::Cvtpd2ps
@@ -1291,12 +1289,12 @@ impl fmt::Debug for SseOpcode {
         let name = match self {
             SseOpcode::Blendvpd => "blendvpd",
             SseOpcode::Blendvps => "blendvps",
-            SseOpcode::Cmpps => "cmpps",
-            SseOpcode::Cmppd => "cmppd",
-            SseOpcode::Cmpss => "cmpss",
-            SseOpcode::Cmpsd => "cmpsd",
-            SseOpcode::Comiss => "comiss",
-            SseOpcode::Comisd => "comisd",
+            //SseOpcode::Cmpps => "cmpps",
+            //SseOpcode::Cmppd => "cmppd",
+            //SseOpcode::Cmpss => "cmpss",
+            //SseOpcode::Cmpsd => "cmpsd",
+            //SseOpcode::Comiss => "comiss",
+            //SseOpcode::Comisd => "comisd",
             SseOpcode::Cvtdq2ps => "cvtdq2ps",
             SseOpcode::Cvtdq2pd => "cvtdq2pd",
             SseOpcode::Cvtpd2ps => "cvtpd2ps",

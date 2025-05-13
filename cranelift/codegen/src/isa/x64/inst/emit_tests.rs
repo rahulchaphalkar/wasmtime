@@ -3734,28 +3734,6 @@ fn test_x64_emit() {
     // XmmRmRImm
     insns.push((
         Inst::xmm_rm_r_imm(
-            SseOpcode::Cmppd,
-            RegMem::reg(xmm5),
-            w_xmm1,
-            2,
-            OperandSize::Size32,
-        ),
-        "660FC2CD02",
-        "cmppd   $2, %xmm1, %xmm5, %xmm1",
-    ));
-    insns.push((
-        Inst::xmm_rm_r_imm(
-            SseOpcode::Cmpps,
-            RegMem::reg(xmm15),
-            w_xmm7,
-            0,
-            OperandSize::Size32,
-        ),
-        "410FC2FF00",
-        "cmpps   $0, %xmm7, %xmm15, %xmm7",
-    ));
-    insns.push((
-        Inst::xmm_rm_r_imm(
             SseOpcode::Palignr,
             RegMem::reg(xmm1),
             w_xmm9,

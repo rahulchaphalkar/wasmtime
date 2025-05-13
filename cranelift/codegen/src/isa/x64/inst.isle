@@ -868,12 +868,6 @@
 (type SseOpcode extern
       (enum Blendvpd
             Blendvps
-            Comiss
-            Comisd
-            Cmpps
-            ;;Cmppd
-            Cmpss
-            Cmpsd
             Cvtdq2ps
             Cvtdq2pd
             Cvtpd2ps
@@ -1004,7 +998,7 @@
             Sqrtpd
             Sqrtss
             Sqrtsd
-            Ucomiss
+            ;Ucomiss
             Ucomisd
             Unpcklps
             Unpcklpd
@@ -3282,13 +3276,12 @@
 
 ;; Helper for creating floating-point comparison instructions (`UCOMIS[S|D]`).
 (decl x64_ucomis (Type Xmm XmmMem) ProducesFlags)
-(rule (x64_ucomis $F32 src1 src2)
-      (xmm_cmp_rm_r (SseOpcode.Ucomiss) src1 src2))
-(rule (x64_ucomis $F64 src1 src2)
-      (xmm_cmp_rm_r (SseOpcode.Ucomisd) src1 src2))
+; (rule (x64_ucomis $F32 src1 src2)
+;      (xmm_cmp_rm_r (SseOpcode.Ucomiss) src1 src2))
 (rule 1 (x64_ucomis $F32 src1 src2)
         (if-let true (use_avx))
         (xmm_cmp_rm_r_vex (AvxOpcode.Vucomiss) src1 src2))
+;(rule 0 (x64_ucomis $F32 src1 src2)(x64_ucomiss_a src1 src2))
 (rule 1 (x64_ucomis $F64 src1 src2)
         (if-let true (use_avx))
         (xmm_cmp_rm_r_vex (AvxOpcode.Vucomisd) src1 src2))
@@ -4117,29 +4110,18 @@
 (rule (x64_cmpp $F64X2 x y imm) (x64_cmppd x y imm))
 
 (decl x64_cmpps (Xmm XmmMem FcmpImm) Xmm)
-(rule 0 (x64_cmpps src1 src2 imm)
-      (xmm_rm_r_imm (SseOpcode.Cmpps)
-                    src1
-                    src2
-                    (encode_fcmp_imm imm)
-                    (OperandSize.Size32)))
 (rule 1 (x64_cmpps src1 src2 imm)
       (if-let true (use_avx))
       (xmm_rmr_imm_vex (AvxOpcode.Vcmpps)
                        src1
                        src2
                        (encode_fcmp_imm imm)))
+(rule 0 (x64_cmpps src1 src2 imm) (x64_cmpps_a src1 src2 (encode_fcmp_imm imm)))
 
 ;; Note that `Size32` is intentional despite this being used for 64-bit
 ;; operations, since this presumably induces the correct encoding of the
 ;; instruction.
 (decl x64_cmppd (Xmm XmmMem FcmpImm) Xmm)
-;; (rule 0 (x64_cmppd src1 src2 imm)
-;;      (xmm_rm_r_imm (SseOpcode.Cmppd)
-;;                    src1
-;;                    src2
-;;                    (encode_fcmp_imm imm)
-;;                    (OperandSize.Size32)))
 (rule 1 (x64_cmppd src1 src2 imm)
       (if-let true (use_avx))
       (xmm_rmr_imm_vex (AvxOpcode.Vcmppd)

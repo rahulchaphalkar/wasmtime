@@ -4,8 +4,6 @@
 //! throughout this crate to avoid depending on the `arbitrary` crate
 //! unconditionally (use the `fuzz` feature instead).
 
-use std::panic;
-
 use crate::{
     AmodeOffset, AmodeOffsetPlusKnownOffset, AsReg, Fixed, Gpr, Inst, NonRspGpr, Registers, Xmm,
 };
@@ -279,8 +277,7 @@ mod test {
             println!("#{}: {inst}", count.fetch_add(1, Ordering::SeqCst));
             Ok(())
         })
-        .budget_ms(10_000);
-        //.seed(0x9085b28e00010000);
+        .budget_ms(1_000);
 
         // This will run the `roundtrip` fuzzer for one second. To repeatably
         // test a single input, append `.seed(0x<failing seed>)`.
