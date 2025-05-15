@@ -3036,10 +3036,10 @@ pub(crate) fn emit(
             let propagate_nan = sink.get_label();
             let do_min_max = sink.get_label();
 
-            let (add_op, cmp_op, and_op, or_op, min_max_op) = match size {
+            let (add_op, /*cmp_op,*/ and_op, or_op, min_max_op) = match size {
                 OperandSize::Size32 => (
                     asm::inst::addss_a::new(dst, lhs).into(),
-                    SseOpcode::Ucomiss,
+                    //SseOpcode::Ucomiss,
                     asm::inst::andps_a::new(dst, lhs).into(),
                     asm::inst::orps_a::new(dst, lhs).into(),
                     if *is_min {
@@ -3050,7 +3050,7 @@ pub(crate) fn emit(
                 ),
                 OperandSize::Size64 => (
                     asm::inst::addsd_a::new(dst, lhs).into(),
-                    SseOpcode::Ucomisd,
+                    //SseOpcode::Ucomisd,
                     asm::inst::andpd_a::new(dst, lhs).into(),
                     asm::inst::orpd_a::new(dst, lhs).into(),
                     if *is_min {
@@ -3062,8 +3062,8 @@ pub(crate) fn emit(
                 _ => unreachable!(),
             };
 
-            let inst = Inst::xmm_cmp_rm_r(cmp_op, dst.to_reg(), RegMem::reg(lhs));
-            inst.emit(sink, info, state);
+            // let inst = Inst::xmm_cmp_rm_r(cmp_op, dst.to_reg(), RegMem::reg(lhs));
+            // inst.emit(sink, info, state);
 
             one_way_jmp(sink, CC::NZ, do_min_max);
             one_way_jmp(sink, CC::P, propagate_nan);
@@ -3277,8 +3277,8 @@ pub(crate) fn emit(
             let rex = RexFlags::clear_w();
             let (prefix, opcode, len) = match op {
                 SseOpcode::Ptest => (LegacyPrefixes::_66, 0x0F3817, 3),
-                SseOpcode::Ucomisd => (LegacyPrefixes::_66, 0x0F2E, 2),
-                SseOpcode::Ucomiss => (LegacyPrefixes::None, 0x0F2E, 2),
+                // SseOpcode::Ucomisd => (LegacyPrefixes::_66, 0x0F2E, 2),
+                // SseOpcode::Ucomiss => (LegacyPrefixes::None, 0x0F2E, 2),
                 _ => unimplemented!("Emit xmm cmp rm r"),
             };
 
@@ -3534,9 +3534,9 @@ pub(crate) fn emit(
             //
             // done:
 
-            let (cast_op, cmp_op, trunc_op) = match src_size {
-                OperandSize::Size64 => (SseOpcode::Movq, SseOpcode::Ucomisd, SseOpcode::Cvttsd2si),
-                OperandSize::Size32 => (SseOpcode::Movd, SseOpcode::Ucomiss, SseOpcode::Cvttss2si),
+            let (cast_op, trunc_op) = match src_size {
+                OperandSize::Size64 => (SseOpcode::Movq, /*SseOpcode::Ucomisd,*/ SseOpcode::Cvttsd2si),
+                OperandSize::Size32 => (SseOpcode::Movd, /*SseOpcode::Ucomiss,*/ SseOpcode::Cvttss2si),
                 _ => unreachable!(),
             };
 
@@ -3554,8 +3554,8 @@ pub(crate) fn emit(
 
             // Check for NaN.
 
-            let inst = Inst::xmm_cmp_rm_r(cmp_op, src, RegMem::reg(src));
-            inst.emit(sink, info, state);
+            // let inst = Inst::xmm_cmp_rm_r(cmp_op, src, RegMem::reg(src));
+            // inst.emit(sink, info, state);
 
             if *is_saturating {
                 let not_nan = sink.get_label();
@@ -3580,8 +3580,8 @@ pub(crate) fn emit(
                 let inst = asm::inst::xorpd_a::new(tmp_xmm, tmp_xmm.to_reg()).into();
                 Inst::External { inst }.emit(sink, info, state);
 
-                let inst = Inst::xmm_cmp_rm_r(cmp_op, tmp_xmm.to_reg(), RegMem::reg(src));
-                inst.emit(sink, info, state);
+                // let inst = Inst::xmm_cmp_rm_r(cmp_op, tmp_xmm.to_reg(), RegMem::reg(src));
+                // inst.emit(sink, info, state);
 
                 // Jump if >= to done.
                 one_way_jmp(sink, CC::NB, done);
@@ -3631,8 +3631,8 @@ pub(crate) fn emit(
                     Inst::gpr_to_xmm(cast_op, RegMem::reg(tmp_gpr.to_reg()), *src_size, tmp_xmm);
                 inst.emit(sink, info, state);
 
-                let inst = Inst::xmm_cmp_rm_r(cmp_op, src, RegMem::reg(tmp_xmm.to_reg()));
-                inst.emit(sink, info, state);
+                // let inst = Inst::xmm_cmp_rm_r(cmp_op, src, RegMem::reg(tmp_xmm.to_reg()));
+                // inst.emit(sink, info, state);
 
                 // no trap if src >= or > threshold
                 let inst = Inst::trap_if(no_overflow_cc.invert(), TrapCode::INTEGER_OVERFLOW);
@@ -3644,8 +3644,8 @@ pub(crate) fn emit(
                 let inst = asm::inst::xorpd_a::new(tmp_xmm, tmp_xmm.to_reg()).into();
                 Inst::External { inst }.emit(sink, info, state);
 
-                let inst = Inst::xmm_cmp_rm_r(cmp_op, tmp_xmm.to_reg(), RegMem::reg(src));
-                inst.emit(sink, info, state);
+                // let inst = Inst::xmm_cmp_rm_r(cmp_op, tmp_xmm.to_reg(), RegMem::reg(src));
+                // inst.emit(sink, info, state);
 
                 // no trap if 0 >= src
                 let inst = Inst::trap_if(CC::B, TrapCode::INTEGER_OVERFLOW);
@@ -3707,17 +3707,17 @@ pub(crate) fn emit(
 
             assert_ne!(tmp_xmm.to_reg(), src, "tmp_xmm clobbers src!");
 
-            let (sub_op, cast_op, cmp_op, trunc_op) = match src_size {
+            let (sub_op, cast_op, trunc_op) = match src_size {
                 OperandSize::Size32 => (
                     asm::inst::subss_a::new(tmp_xmm2, tmp_xmm.to_reg()).into(),
                     SseOpcode::Movd,
-                    SseOpcode::Ucomiss,
+                    //SseOpcode::Ucomiss,
                     SseOpcode::Cvttss2si,
                 ),
                 OperandSize::Size64 => (
                     asm::inst::subsd_a::new(tmp_xmm2, tmp_xmm.to_reg()).into(),
                     SseOpcode::Movq,
-                    SseOpcode::Ucomisd,
+                    //SseOpcode::Ucomisd,
                     SseOpcode::Cvttsd2si,
                 ),
                 _ => unreachable!(),
@@ -3737,8 +3737,8 @@ pub(crate) fn emit(
             let inst = Inst::gpr_to_xmm(cast_op, RegMem::reg(tmp_gpr.to_reg()), *src_size, tmp_xmm);
             inst.emit(sink, info, state);
 
-            let inst = Inst::xmm_cmp_rm_r(cmp_op, src, RegMem::reg(tmp_xmm.to_reg()));
-            inst.emit(sink, info, state);
+            // let inst = Inst::xmm_cmp_rm_r(cmp_op, src, RegMem::reg(tmp_xmm.to_reg()));
+            // inst.emit(sink, info, state);
 
             let handle_large = sink.get_label();
             one_way_jmp(sink, CC::NB, handle_large); // jump to handle_large if src >= large_threshold

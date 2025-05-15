@@ -999,7 +999,7 @@
             Sqrtss
             Sqrtsd
             ;Ucomiss
-            Ucomisd
+            ;Ucomisd
             Unpcklps
             Unpcklpd
             Unpckhps
@@ -2721,7 +2721,7 @@
 ;; simply the ones currently used in Cranelift's lowerings.
 
 ;; Some operations produce flags.
-(type ProduceFlagsOp (enum (Add) (Sub)))
+(type ProduceFlagsOp (enum (Add) (Sub) (Cmp)))
 
 (decl x64_produce_flags (ProduceFlagsOp Type Gpr GprMemImm) ProducesFlags)
 (rule (x64_produce_flags (ProduceFlagsOp.Add) ty src1 src2)
@@ -2729,11 +2729,17 @@
 (rule (x64_produce_flags (ProduceFlagsOp.Sub) ty src1 src2)
       (x64_sub_with_flags_paired ty src1 src2))
 
+; (decl cmp_produce_flags (Type Gpr GprMemImm) ProducesFlags)
+; (rule (cmp_produce_flags (ProduceFlagsOp.Cmp) ty src1 src2)
+;       (cmp_produce_flags ty src1 src2))
+
 ;; This should only be use for instructions that _do_ produce flags that can be
 ;; consumed later. It is semantically "unsafe" and must be used correctly.
 (decl asm_produce_flags (AssemblerOutputs) ProducesFlags)
 (rule (asm_produce_flags (AssemblerOutputs.RetGpr inst gpr))
       (ProducesFlags.ProducesFlagsReturnsResultWithConsumer inst gpr))
+; (rule (asm_produce_flags (AssemblerOutputs.RetGprMem))
+;       (ProducesFlags.ProducesFlagsReturnsResultWithConsumer))
 
 ;; Other operations consume _and_ produce flags--"chaining".
 (type ChainFlagsOp (enum (Adc) (Sbb)))
@@ -2760,6 +2766,8 @@
 
 (decl asm_produce_flags_side_effect (AssemblerOutputs) ProducesFlags)
 (rule (asm_produce_flags_side_effect (AssemblerOutputs.RetGpr inst gpr))
+      (ProducesFlags.ProducesFlagsSideEffect inst))
+(rule (asm_produce_flags_side_effect (AssemblerOutputs.SideEffect inst))
       (ProducesFlags.ProducesFlagsSideEffect inst))
 
 ;; Other helpers for instruction emission.
@@ -2815,7 +2823,9 @@
 (rule (x64_add_with_flags_paired ty src1 src2)
       (asm_produce_flags (x64_add_raw ty src1 src2)))
 
-
+; (decl cmp_produce_flags (Type Gpr GprMemImm) ProducesFlags)
+; (rule (cmp_produce_flags ty src1 src2)
+;       (asm_produce_flags (x64_cmp_raw ty src1 src2)))
 
 ;; Helper for creating raw `adc` instructions; Cranelift only uses the 64-bit
 ;; variant of this instruction. As with `add`, we match 8-bit immediates first;
@@ -3276,15 +3286,23 @@
 
 ;; Helper for creating floating-point comparison instructions (`UCOMIS[S|D]`).
 (decl x64_ucomis (Type Xmm XmmMem) ProducesFlags)
-; (rule (x64_ucomis $F32 src1 src2)
-;      (xmm_cmp_rm_r (SseOpcode.Ucomiss) src1 src2))
 (rule 1 (x64_ucomis $F32 src1 src2)
         (if-let true (use_avx))
         (xmm_cmp_rm_r_vex (AvxOpcode.Vucomiss) src1 src2))
-;(rule 0 (x64_ucomis $F32 src1 src2)(x64_ucomiss_a src1 src2))
-(rule 1 (x64_ucomis $F64 src1 src2)
-        (if-let true (use_avx))
-        (xmm_cmp_rm_r_vex (AvxOpcode.Vucomisd) src1 src2))
+(rule 0 (x64_ucomis $F32 src1 src2)
+        (asm_produce_flags_side_effect (x64_ucomiss_a_raw src1 src2)))
+; (rule 1 (x64_ucomis $F64 src1 src2)
+;         (if-let true (use_avx))
+;         (xmm_cmp_rm_r_vex (AvxOpcode.Vucomisd) src1 src2))
+; (rule 0 (x64_ucomis $F64 src1 src2)
+;         (asm_produce_flags_side_effect (x64_ucomisd_a_raw src1 src2)))
+
+;; Helper for creating `COMIS[S|D]` instructions.
+; (decl x64_comis (Type Xmm XmmMem) ProducesFlags)
+; (rule (x64_comis $F32 src1 src2)
+;         (asm_produce_flags_side_effect (x64_comiss_a_raw src1 src2)))
+; (rule (x64_comis $F64 src1 src2)
+;             (asm_produce_flags_side_effect (x64_comisd_a_raw src1 src2)))
 
 ;; Helper for creating `test` instructions.
 (decl x64_test (OperandSize Gpr GprMemImm) ProducesFlags)
@@ -4116,7 +4134,7 @@
                        src1
                        src2
                        (encode_fcmp_imm imm)))
-(rule 0 (x64_cmpps src1 src2 imm) (x64_cmpps_a src1 src2 (encode_fcmp_imm imm)))
+;(rule 0 (x64_cmpps src1 src2 imm) (x64_cmpps_a src1 src2 (encode_fcmp_imm imm)))
 
 ;; Note that `Size32` is intentional despite this being used for 64-bit
 ;; operations, since this presumably induces the correct encoding of the
@@ -4128,7 +4146,7 @@
                        src1
                        src2
                        (encode_fcmp_imm imm)))
-(rule 0 (x64_cmppd src1 src2 imm) (x64_cmppd_a src1 src2 (encode_fcmp_imm imm)))
+;(rule 0 (x64_cmppd src1 src2 imm) (x64_cmppd_a src1 src2 (encode_fcmp_imm imm)))
 
 ;; Helper for creating `pinsrb` instructions.
 (decl x64_pinsrb (Xmm GprMem u8) Xmm)

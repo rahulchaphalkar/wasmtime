@@ -3,7 +3,7 @@
 // Pull in the ISLE generated code.
 pub(crate) mod generated_code;
 use crate::{ir::types, ir::AtomicRmwOp};
-use generated_code::{AssemblerOutputs, Context, MInst, RegisterClass};
+use generated_code::{AssemblerOutputs, Context, MInst, RegisterClass, SideEffectNoResult};
 
 // Types that the generated ISLE code uses via `use super::*`.
 use super::external::{isle_assembler_methods, CraneliftRegisters, PairedGpr, PairedXmm};

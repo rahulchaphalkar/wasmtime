@@ -1077,8 +1077,8 @@ pub enum SseOpcode {
     Sqrtpd,
     Sqrtss,
     Sqrtsd,
-    Ucomiss,
-    Ucomisd,
+    //Ucomiss,
+    //Ucomisd,
     Unpcklps,
     Unpcklpd,
     Unpckhps,
@@ -1121,7 +1121,7 @@ impl SseOpcode {
             | SseOpcode::Shufps
             | SseOpcode::Sqrtps
             | SseOpcode::Sqrtss
-            | SseOpcode::Ucomiss
+            //| SseOpcode::Ucomiss
             | SseOpcode::Unpcklps
             | SseOpcode::Unpckhps => SSE,
 
@@ -1193,7 +1193,7 @@ impl SseOpcode {
             | SseOpcode::Punpcklwd
             | SseOpcode::Sqrtpd
             | SseOpcode::Sqrtsd
-            | SseOpcode::Ucomisd
+            //| SseOpcode::Ucomisd
             | SseOpcode::Punpckldq
             | SseOpcode::Punpckhdq
             | SseOpcode::Punpcklqdq
@@ -1425,8 +1425,8 @@ impl fmt::Debug for SseOpcode {
             SseOpcode::Sqrtpd => "sqrtpd",
             SseOpcode::Sqrtss => "sqrtss",
             SseOpcode::Sqrtsd => "sqrtsd",
-            SseOpcode::Ucomiss => "ucomiss",
-            SseOpcode::Ucomisd => "ucomisd",
+            // SseOpcode::Ucomiss => "ucomiss",
+            // SseOpcode::Ucomisd => "ucomisd",
             SseOpcode::Unpcklps => "unpcklps",
             SseOpcode::Unpckhps => "unpckhps",
             SseOpcode::Punpckldq => "punpckldq",

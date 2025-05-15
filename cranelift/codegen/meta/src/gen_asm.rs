@@ -1,7 +1,7 @@
 //! Generate the Cranelift-specific integration of the x64 assembler.
 
 use cranelift_assembler_x64_meta::dsl::{
-    format::RegClass, Format, Inst, Mutability, Operand, OperandKind,
+    format::RegClass, EflagsMutability, Format, Inst, Mutability, Operand, OperandKind
 };
 use cranelift_srcgen::{fmtln, Formatter};
 
@@ -123,7 +123,15 @@ pub fn generate_macro_inst_fn(f: &mut Formatter, inst: &Inst) {
 
             use cranelift_assembler_x64_meta::dsl::Mutability::*;
             match results.as_slice() {
-                [] => fmtln!(f, "AssemblerOutputs::NoReturn {{ inst }}"),
+                // Todo : implement for other return types, this is for no return e.g. ucomiss
+                [] => match inst.format.eflags_mutability() {
+                    EflagsMutability::R | EflagsMutability::RW | EflagsMutability::W => {
+                        fmtln!(f, "AssemblerOutputs::SideEffect {{ inst }}");
+                    }
+                    _ => {
+                        fmtln!(f, "SideEffectNoResult::Inst(inst)");
+                    }
+                },
                 [one] => match one.mutability {
                     Read => unreachable!(),
                     Write => match one.location.kind() {
@@ -151,11 +159,6 @@ pub fn generate_macro_inst_fn(f: &mut Formatter, inst: &Inst) {
                         OperandKind::Mem(_) => {
                             fmtln!(f, "AssemblerOutputs::SideEffect {{ inst }}")
                         }
-                        // Special case for flag-producing instructions like ucomiss
-                        OperandKind::RegMem(rm) if rm.to_string() == "xmm_m32" 
-                        || rm.to_string() == "xmm_m64" => {
-                        fmtln!(f, "AssemblerOutputs::ProducesFlags {{ inst }}")
-                    },
                         // One read/write regmem output? We need to output
                         // everything and it'll internally disambiguate which was
                         // emitted (e.g. the mem variant or the register variant).
@@ -247,8 +250,8 @@ pub enum IsleConstructor {
     /// result to an `Xmm`.
     RetXmm,
 
-    /// This constructor doesn't produce any return value.
-    RetNoReturn,
+    // /// This constructor produces a side effect of setting Eflags reigster
+    // RetEflagsSideEffect,
 }
 
 impl IsleConstructor {
@@ -258,7 +261,6 @@ impl IsleConstructor {
             IsleConstructor::RetMemorySideEffect => "SideEffectNoResult",
             IsleConstructor::RetGpr => "Gpr",
             IsleConstructor::RetXmm => "Xmm",
-            IsleConstructor::RetNoReturn => "SideEffectNoResult",
         }
     }
 
@@ -269,7 +271,6 @@ impl IsleConstructor {
             IsleConstructor::RetMemorySideEffect => "defer_side_effect",
             IsleConstructor::RetGpr => "emit_ret_gpr",
             IsleConstructor::RetXmm => "emit_ret_xmm",
-            IsleConstructor::RetNoReturn => "defer_no_return",
         }
     }
 
@@ -279,7 +280,6 @@ impl IsleConstructor {
             IsleConstructor::RetMemorySideEffect => "_mem",
             IsleConstructor::RetGpr => "",
             IsleConstructor::RetXmm => "",
-            IsleConstructor::RetNoReturn => "_no_return",
         }
     }
 }
@@ -296,7 +296,6 @@ pub fn isle_param_for_ctor(op: &Operand, ctor: IsleConstructor) -> String {
             IsleConstructor::RetMemorySideEffect => "Amode".to_string(),
             IsleConstructor::RetGpr => "Gpr".to_string(),
             IsleConstructor::RetXmm => "Xmm".to_string(),
-            IsleConstructor::RetNoReturn => "SideEffectNoResult".to_string(),
         },
 
         // everything else is the same as the "raw" variant
@@ -319,7 +318,13 @@ pub fn isle_constructors(format: &Format) -> Vec<IsleConstructor> {
         .filter(|o| o.mutability.is_write())
         .collect::<Vec<_>>();
     match &write_operands[..] {
-            [] => vec![IsleConstructor::RetNoReturn],
+            // Todo: This is when all operands are read-only e.g. ucomiss
+            [] => match format.eflags_mutability() {
+                EflagsMutability::R | EflagsMutability::RW | EflagsMutability::W => {
+                    vec![IsleConstructor::RetMemorySideEffect]
+                }
+                _ => unimplemented!("if you truly need this (and not a `SideEffect*`), add a `NoReturn` variant to `AssemblerOutputs`"),
+            },
             [one] => match one.mutability {
                 Read => unreachable!(),
                 ReadWrite | Write => match one.location.kind() {
@@ -327,8 +332,23 @@ pub fn isle_constructors(format: &Format) -> Vec<IsleConstructor> {
                     // One read/write register output? Output the instruction
                     // and that register.
                     Reg(r) | FixedReg(r) => match r.reg_class().unwrap() {
-                        RegClass::Xmm => vec![IsleConstructor::RetXmm],
-                        RegClass::Gpr => vec![IsleConstructor::RetGpr],
+                        RegClass::Xmm => {
+                            match format.eflags_mutability() {
+                                EflagsMutability::R | EflagsMutability::RW | EflagsMutability::W => {
+                                    vec![IsleConstructor::RetMemorySideEffect, IsleConstructor::RetXmm]
+                                },
+                                _ => { vec![IsleConstructor::RetXmm]}
+                        }
+                    },
+                        RegClass::Gpr => {
+                            match format.eflags_mutability() {
+                                EflagsMutability::R | EflagsMutability::RW | EflagsMutability::W => {
+                                    vec![IsleConstructor::RetMemorySideEffect, IsleConstructor::RetGpr]
+                                },
+                                _ => { vec![IsleConstructor::RetGpr]}
+                            }
+                            
+                        }
                     },
                     // One read/write memory operand? Output a side effect.
                     Mem(_) => vec![IsleConstructor::RetMemorySideEffect],
@@ -340,8 +360,8 @@ pub fn isle_constructors(format: &Format) -> Vec<IsleConstructor> {
                     },
                 }
             },
-        other => panic!("unsupported number of write operands {other:?}"),
-    }
+            other => panic!("unsupported number of write operands {other:?}"),
+        }
 }
 
 /// Generate a "raw" constructor that simply constructs, but does not emit
@@ -439,10 +459,6 @@ pub fn generate_isle(f: &mut Formatter, insts: &[Inst]) {
     fmtln!(f, "    ;; Used for instructions that return an");
     fmtln!(f, "    ;; XMM register.");
     fmtln!(f, "    (RetXmm (inst MInst) (xmm Xmm))");
-    fmtln!(f, "    ;; Used for instructions that produce flags.");
-    fmtln!(f, "    (ProducesFlags (inst MInst))");
-    fmtln!(f, "    ;; Used for instructions that do not return anything.");
-    fmtln!(f, "    (NoReturn (inst MInst))");
     fmtln!(f, "    ;; TODO: eventually add more variants for");
     fmtln!(f, "    ;; multi-return, XMM, etc.; see");
     fmtln!(
@@ -465,12 +481,6 @@ pub fn generate_isle(f: &mut Formatter, insts: &[Inst]) {
     fmtln!(f, "    (let ((_ Unit (emit inst))) xmm))");
     f.empty_line();
 
-    fmtln!(f, ";; Directly emit instructions that produce flags.");
-    fmtln!(f, "(decl emit_produces_flags (AssemblerOutputs) ProducesFlags)");
-    fmtln!(f, "(rule (emit_produces_flags (AssemblerOutputs.ProducesFlags inst))");
-    fmtln!(f, "    (let ((_ Unit (emit inst))) (ProducesFlags.ProducesFlagsSideEffect inst)))");
-    f.empty_line();
-
     fmtln!(f, ";; Pass along the side-effecting instruction");
     fmtln!(f, ";; for later emission.");
     fmtln!(
@@ -480,17 +490,6 @@ pub fn generate_isle(f: &mut Formatter, insts: &[Inst]) {
     fmtln!(
         f,
         "(rule (defer_side_effect (AssemblerOutputs.SideEffect inst))"
-    );
-    fmtln!(f, "    (SideEffectNoResult.Inst inst))");
-    f.empty_line();
-    fmtln!(f, ";; Pass along an instruction with no return value");
-    fmtln!(
-        f,
-        "(decl defer_no_return (AssemblerOutputs) SideEffectNoResult)"
-    );
-    fmtln!(
-        f,
-        "(rule (defer_no_return (AssemblerOutputs.NoReturn inst))"
     );
     fmtln!(f, "    (SideEffectNoResult.Inst inst))");
     f.empty_line();
