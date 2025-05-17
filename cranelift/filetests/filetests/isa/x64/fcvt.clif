@@ -436,18 +436,17 @@ block0(v0: f32):
 ; block1: ; offset 0x4
 ;   movl $0x4f000000, %r8d
 ;   movd %r8d, %xmm3
-;   ucomiss %xmm3, %xmm0
-;   jae 0x2d
-;   jp 0x4c
+;   jae 0x2a
+;   jp 0x49
 ;   cvttss2si %xmm0, %eax
 ;   cmpl $0, %eax
-;   jge 0x47
+;   jge 0x44
 ;   ud2 ; trap: int_ovf
 ;   movaps %xmm0, %xmm4
 ;   subss %xmm3, %xmm4
 ;   cvttss2si %xmm4, %eax
 ;   cmpl $0, %eax
-;   jl 0x4e
+;   jl 0x4b
 ;   addl $0x80000000, %eax
 ;   movq %rbp, %rsp
 ;   popq %rbp
@@ -477,18 +476,17 @@ block0(v0: f32):
 ; block1: ; offset 0x4
 ;   movl $0x5f000000, %r8d
 ;   movd %r8d, %xmm3
-;   ucomiss %xmm3, %xmm0
-;   jae 0x2f
-;   jp 0x57
+;   jae 0x2c
+;   jp 0x54
 ;   cvttss2si %xmm0, %rax
 ;   cmpq $0, %rax
-;   jge 0x52
+;   jge 0x4f
 ;   ud2 ; trap: int_ovf
 ;   movaps %xmm0, %xmm4
 ;   subss %xmm3, %xmm4
 ;   cvttss2si %xmm4, %rax
 ;   cmpq $0, %rax
-;   jl 0x59
+;   jl 0x56
 ;   movabsq $9223372036854775808, %r8
 ;   addq %r8, %rax
 ;   movq %rbp, %rsp
@@ -519,18 +517,17 @@ block0(v0: f64):
 ; block1: ; offset 0x4
 ;   movabsq $0x41e0000000000000, %r8
 ;   movq %r8, %xmm3
-;   ucomisd %xmm3, %xmm0
-;   jae 0x32
-;   jp 0x51
+;   jae 0x2e
+;   jp 0x4d
 ;   cvttsd2si %xmm0, %eax
 ;   cmpl $0, %eax
-;   jge 0x4c
+;   jge 0x48
 ;   ud2 ; trap: int_ovf
 ;   movaps %xmm0, %xmm4
 ;   subsd %xmm3, %xmm4
 ;   cvttsd2si %xmm4, %eax
 ;   cmpl $0, %eax
-;   jl 0x53
+;   jl 0x4f
 ;   addl $0x80000000, %eax
 ;   movq %rbp, %rsp
 ;   popq %rbp
@@ -560,18 +557,17 @@ block0(v0: f64):
 ; block1: ; offset 0x4
 ;   movabsq $0x43e0000000000000, %r8
 ;   movq %r8, %xmm3
-;   ucomisd %xmm3, %xmm0
-;   jae 0x34
-;   jp 0x5c
+;   jae 0x30
+;   jp 0x58
 ;   cvttsd2si %xmm0, %rax
 ;   cmpq $0, %rax
-;   jge 0x57
+;   jge 0x53
 ;   ud2 ; trap: int_ovf
 ;   movaps %xmm0, %xmm4
 ;   subsd %xmm3, %xmm4
 ;   cvttsd2si %xmm4, %rax
 ;   cmpq $0, %rax
-;   jl 0x5e
+;   jl 0x5a
 ;   movabsq $9223372036854775808, %r8
 ;   addq %r8, %rax
 ;   movq %rbp, %rsp
@@ -602,23 +598,22 @@ block0(v0: f32):
 ; block1: ; offset 0x4
 ;   movl $0x4f000000, %r8d
 ;   movd %r8d, %xmm3
-;   ucomiss %xmm3, %xmm0
-;   jae 0x39
-;   jnp 0x25
+;   jae 0x36
+;   jnp 0x22
 ;   xorl %eax, %eax
-;   jmp 0x5d
+;   jmp 0x5a
 ;   cvttss2si %xmm0, %eax
 ;   cmpl $0, %eax
-;   jge 0x5d
+;   jge 0x5a
 ;   xorl %eax, %eax
-;   jmp 0x5d
+;   jmp 0x5a
 ;   movaps %xmm0, %xmm4
 ;   subss %xmm3, %xmm4
 ;   cvttss2si %xmm4, %eax
 ;   cmpl $0, %eax
-;   jge 0x57
+;   jge 0x54
 ;   movl $0xffffffff, %eax
-;   jmp 0x5d
+;   jmp 0x5a
 ;   addl $0x80000000, %eax
 ;   movq %rbp, %rsp
 ;   popq %rbp
@@ -646,23 +641,22 @@ block0(v0: f32):
 ; block1: ; offset 0x4
 ;   movl $0x5f000000, %r8d
 ;   movd %r8d, %xmm3
-;   ucomiss %xmm3, %xmm0
-;   jae 0x3d
-;   jnp 0x26
+;   jae 0x3a
+;   jnp 0x23
 ;   xorq %rax, %rax
-;   jmp 0x6c
+;   jmp 0x69
 ;   cvttss2si %xmm0, %rax
 ;   cmpq $0, %rax
-;   jge 0x6c
+;   jge 0x69
 ;   xorq %rax, %rax
-;   jmp 0x6c
+;   jmp 0x69
 ;   movaps %xmm0, %xmm4
 ;   subss %xmm3, %xmm4
 ;   cvttss2si %xmm4, %rax
 ;   cmpq $0, %rax
-;   jge 0x5f
+;   jge 0x5c
 ;   movq $18446744073709551615, %rax
-;   jmp 0x6c
+;   jmp 0x69
 ;   movabsq $9223372036854775808, %r8
 ;   addq %r8, %rax
 ;   movq %rbp, %rsp
@@ -691,23 +685,22 @@ block0(v0: f64):
 ; block1: ; offset 0x4
 ;   movabsq $0x41e0000000000000, %r8
 ;   movq %r8, %xmm3
-;   ucomisd %xmm3, %xmm0
-;   jae 0x3e
-;   jnp 0x2a
+;   jae 0x3a
+;   jnp 0x26
 ;   xorl %eax, %eax
-;   jmp 0x62
+;   jmp 0x5e
 ;   cvttsd2si %xmm0, %eax
 ;   cmpl $0, %eax
-;   jge 0x62
+;   jge 0x5e
 ;   xorl %eax, %eax
-;   jmp 0x62
+;   jmp 0x5e
 ;   movaps %xmm0, %xmm4
 ;   subsd %xmm3, %xmm4
 ;   cvttsd2si %xmm4, %eax
 ;   cmpl $0, %eax
-;   jge 0x5c
+;   jge 0x58
 ;   movl $0xffffffff, %eax
-;   jmp 0x62
+;   jmp 0x5e
 ;   addl $0x80000000, %eax
 ;   movq %rbp, %rsp
 ;   popq %rbp
@@ -735,23 +728,22 @@ block0(v0: f64):
 ; block1: ; offset 0x4
 ;   movabsq $0x43e0000000000000, %r8
 ;   movq %r8, %xmm3
-;   ucomisd %xmm3, %xmm0
-;   jae 0x42
-;   jnp 0x2b
+;   jae 0x3e
+;   jnp 0x27
 ;   xorq %rax, %rax
-;   jmp 0x71
+;   jmp 0x6d
 ;   cvttsd2si %xmm0, %rax
 ;   cmpq $0, %rax
-;   jge 0x71
+;   jge 0x6d
 ;   xorq %rax, %rax
-;   jmp 0x71
+;   jmp 0x6d
 ;   movaps %xmm0, %xmm4
 ;   subsd %xmm3, %xmm4
 ;   cvttsd2si %xmm4, %rax
 ;   cmpq $0, %rax
-;   jge 0x64
+;   jge 0x60
 ;   movq $18446744073709551615, %rax
-;   jmp 0x71
+;   jmp 0x6d
 ;   movabsq $9223372036854775808, %r8
 ;   addq %r8, %rax
 ;   movq %rbp, %rsp
@@ -780,16 +772,13 @@ block0(v0: f32):
 ; block1: ; offset 0x4
 ;   cvttss2si %xmm0, %eax
 ;   cmpl $1, %eax
-;   jno 0x39
-;   ucomiss %xmm0, %xmm0
-;   jp 0x3e
+;   jno 0x30
+;   jp 0x35
 ;   movl $0xcf000000, %edx
 ;   movd %edx, %xmm3
-;   ucomiss %xmm3, %xmm0
-;   jb 0x40
+;   jb 0x37
 ;   xorpd %xmm3, %xmm3
-;   ucomiss %xmm0, %xmm3
-;   jb 0x42
+;   jb 0x39
 ;   movq %rbp, %rsp
 ;   popq %rbp
 ;   retq
@@ -819,16 +808,13 @@ block0(v0: f32):
 ; block1: ; offset 0x4
 ;   cvttss2si %xmm0, %rax
 ;   cmpq $1, %rax
-;   jno 0x3b
-;   ucomiss %xmm0, %xmm0
-;   jp 0x40
+;   jno 0x32
+;   jp 0x37
 ;   movl $0xdf000000, %edx
 ;   movd %edx, %xmm3
-;   ucomiss %xmm3, %xmm0
-;   jb 0x42
+;   jb 0x39
 ;   xorpd %xmm3, %xmm3
-;   ucomiss %xmm0, %xmm3
-;   jb 0x44
+;   jb 0x3b
 ;   movq %rbp, %rsp
 ;   popq %rbp
 ;   retq
@@ -858,16 +844,13 @@ block0(v0: f64):
 ; block1: ; offset 0x4
 ;   cvttsd2si %xmm0, %eax
 ;   cmpl $1, %eax
-;   jno 0x42
-;   ucomisd %xmm0, %xmm0
-;   jp 0x47
+;   jno 0x36
+;   jp 0x3b
 ;   movabsq $13970166044105375744, %rdx
 ;   movq %rdx, %xmm3
-;   ucomisd %xmm3, %xmm0
-;   jbe 0x49
+;   jbe 0x3d
 ;   xorpd %xmm3, %xmm3
-;   ucomisd %xmm0, %xmm3
-;   jb 0x4b
+;   jb 0x3f
 ;   movq %rbp, %rsp
 ;   popq %rbp
 ;   retq
@@ -897,16 +880,13 @@ block0(v0: f64):
 ; block1: ; offset 0x4
 ;   cvttsd2si %xmm0, %rax
 ;   cmpq $1, %rax
-;   jno 0x44
-;   ucomisd %xmm0, %xmm0
-;   jp 0x49
+;   jno 0x38
+;   jp 0x3d
 ;   movabsq $14114281232179134464, %rdx
 ;   movq %rdx, %xmm3
-;   ucomisd %xmm3, %xmm0
-;   jb 0x4b
+;   jb 0x3f
 ;   xorpd %xmm3, %xmm3
-;   ucomisd %xmm0, %xmm3
-;   jb 0x4d
+;   jb 0x41
 ;   movq %rbp, %rsp
 ;   popq %rbp
 ;   retq
@@ -936,14 +916,12 @@ block0(v0: f32):
 ; block1: ; offset 0x4
 ;   cvttss2si %xmm0, %eax
 ;   cmpl $1, %eax
-;   jno 0x33
-;   ucomiss %xmm0, %xmm0
-;   jnp 0x21
+;   jno 0x2d
+;   jnp 0x1e
 ;   xorl %eax, %eax
-;   jmp 0x33
+;   jmp 0x2d
 ;   xorpd %xmm3, %xmm3
-;   ucomiss %xmm0, %xmm3
-;   jae 0x33
+;   jae 0x2d
 ;   movl $0x7fffffff, %eax
 ;   movq %rbp, %rsp
 ;   popq %rbp
@@ -971,14 +949,12 @@ block0(v0: f32):
 ; block1: ; offset 0x4
 ;   cvttss2si %xmm0, %rax
 ;   cmpq $1, %rax
-;   jno 0x3b
-;   ucomiss %xmm0, %xmm0
-;   jnp 0x24
+;   jno 0x35
+;   jnp 0x21
 ;   xorq %rax, %rax
-;   jmp 0x3b
+;   jmp 0x35
 ;   xorpd %xmm3, %xmm3
-;   ucomiss %xmm0, %xmm3
-;   jae 0x3b
+;   jae 0x35
 ;   movabsq $0x7fffffffffffffff, %rax
 ;   movq %rbp, %rsp
 ;   popq %rbp
@@ -1006,14 +982,12 @@ block0(v0: f64):
 ; block1: ; offset 0x4
 ;   cvttsd2si %xmm0, %eax
 ;   cmpl $1, %eax
-;   jno 0x35
-;   ucomisd %xmm0, %xmm0
-;   jnp 0x22
+;   jno 0x2d
+;   jnp 0x1e
 ;   xorl %eax, %eax
-;   jmp 0x35
+;   jmp 0x2d
 ;   xorpd %xmm3, %xmm3
-;   ucomisd %xmm0, %xmm3
-;   jae 0x35
+;   jae 0x2d
 ;   movl $0x7fffffff, %eax
 ;   movq %rbp, %rsp
 ;   popq %rbp
@@ -1041,14 +1015,12 @@ block0(v0: f64):
 ; block1: ; offset 0x4
 ;   cvttsd2si %xmm0, %rax
 ;   cmpq $1, %rax
-;   jno 0x3d
-;   ucomisd %xmm0, %xmm0
-;   jnp 0x25
+;   jno 0x35
+;   jnp 0x21
 ;   xorq %rax, %rax
-;   jmp 0x3d
+;   jmp 0x35
 ;   xorpd %xmm3, %xmm3
-;   ucomisd %xmm0, %xmm3
-;   jae 0x3d
+;   jae 0x35
 ;   movabsq $0x7fffffffffffffff, %rax
 ;   movq %rbp, %rsp
 ;   popq %rbp
@@ -1072,7 +1044,7 @@ block0(v0: f32x4):
 ;   cvtdq2ps %xmm6, %xmm7
 ;   cvttps2dq %xmm0, %xmm6
 ;   subps %xmm7, %xmm0
-;   cmpps   $2, %xmm7, %xmm0, %xmm7
+;   cmpleps %xmm0, %xmm7
 ;   cvttps2dq %xmm0, %xmm0
 ;   pxor %xmm7, %xmm0
 ;   uninit  %xmm1
@@ -1116,7 +1088,7 @@ block0(v0: f32x4):
 ;   movq    %rsp, %rbp
 ; block0:
 ;   movdqa  %xmm0, %xmm4
-;   cmpps   $0, %xmm4, %xmm0, %xmm4
+;   cmpeqps %xmm0, %xmm4
 ;   andps %xmm4, %xmm0
 ;   pxor %xmm0, %xmm4
 ;   cvttps2dq %xmm0, %xmm1
