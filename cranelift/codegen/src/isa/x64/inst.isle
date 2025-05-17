@@ -3286,16 +3286,16 @@
 
 ;; Helper for creating floating-point comparison instructions (`UCOMIS[S|D]`).
 (decl x64_ucomis (Type Xmm XmmMem) ProducesFlags)
-(rule 1 (x64_ucomis $F32 src1 src2)
-        (if-let true (use_avx))
-        (xmm_cmp_rm_r_vex (AvxOpcode.Vucomiss) src1 src2))
-(rule 0 (x64_ucomis $F32 src1 src2)
-        (asm_produce_flags_side_effect (x64_ucomiss_a_raw src1 src2)))
+; (rule 1 (x64_ucomis $F32 src1 src2)
+;         (if-let true (use_avx))
+;         (xmm_cmp_rm_r_vex (AvxOpcode.Vucomiss) src1 src2))
+(rule (x64_ucomis $F32 src1 src2)
+         (asm_produce_flags_side_effect (x64_ucomiss_a_raw src1 src2)))
 ; (rule 1 (x64_ucomis $F64 src1 src2)
 ;         (if-let true (use_avx))
 ;         (xmm_cmp_rm_r_vex (AvxOpcode.Vucomisd) src1 src2))
-; (rule 0 (x64_ucomis $F64 src1 src2)
-;         (asm_produce_flags_side_effect (x64_ucomisd_a_raw src1 src2)))
+(rule (x64_ucomis $F64 src1 src2)
+        (asm_produce_flags_side_effect (x64_ucomisd_a_raw src1 src2)))
 
 ;; Helper for creating `COMIS[S|D]` instructions.
 ; (decl x64_comis (Type Xmm XmmMem) ProducesFlags)
@@ -4134,7 +4134,7 @@
                        src1
                        src2
                        (encode_fcmp_imm imm)))
-;(rule 0 (x64_cmpps src1 src2 imm) (x64_cmpps_a src1 src2 (encode_fcmp_imm imm)))
+(rule 0 (x64_cmpps src1 src2 imm) (x64_cmpps_a src1 src2 (encode_fcmp_imm imm)))
 
 ;; Note that `Size32` is intentional despite this being used for 64-bit
 ;; operations, since this presumably induces the correct encoding of the
@@ -4146,7 +4146,7 @@
                        src1
                        src2
                        (encode_fcmp_imm imm)))
-;(rule 0 (x64_cmppd src1 src2 imm) (x64_cmppd_a src1 src2 (encode_fcmp_imm imm)))
+(rule 0 (x64_cmppd src1 src2 imm) (x64_cmppd_a src1 src2 (encode_fcmp_imm imm)))
 
 ;; Helper for creating `pinsrb` instructions.
 (decl x64_pinsrb (Xmm GprMem u8) Xmm)
