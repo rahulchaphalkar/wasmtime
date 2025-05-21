@@ -945,8 +945,8 @@ pub enum SseOpcode {
     Blendvps,
     //Comiss,
     //Comisd,
-    //Cmpss,
-    //Cmpsd,
+    Cmpss,
+    Cmpsd,
     Cvtdq2ps,
     Cvtdq2pd,
     Cvtpd2ps,
@@ -1099,8 +1099,9 @@ impl SseOpcode {
         match self {
             //SseOpcode::Comiss
             //| SseOpcode::Cmpps
-            //| SseOpcode::Cmpss
-            SseOpcode::Cvtsi2ss
+            SseOpcode::Cmpsd
+            | SseOpcode::Cmpss
+            | SseOpcode::Cvtsi2ss
             | SseOpcode::Cvtss2si
             | SseOpcode::Cvttss2si
             | SseOpcode::Divps
@@ -1291,8 +1292,8 @@ impl fmt::Debug for SseOpcode {
             SseOpcode::Blendvps => "blendvps",
             //SseOpcode::Cmpps => "cmpps",
             //SseOpcode::Cmppd => "cmppd",
-            //SseOpcode::Cmpss => "cmpss",
-            //SseOpcode::Cmpsd => "cmpsd",
+            SseOpcode::Cmpss => "cmpss",
+            SseOpcode::Cmpsd => "cmpsd",
             //SseOpcode::Comiss => "comiss",
             //SseOpcode::Comisd => "comisd",
             SseOpcode::Cvtdq2ps => "cvtdq2ps",

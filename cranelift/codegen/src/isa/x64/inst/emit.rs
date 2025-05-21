@@ -3109,8 +3109,8 @@ pub(crate) fn emit(
             let (prefix, opcode, len) = match op {
                 //SseOpcode::Cmpps => (LegacyPrefixes::None, 0x0FC2, 2),
                 //SseOpcode::Cmppd => (LegacyPrefixes::_66, 0x0FC2, 2),
-                //SseOpcode::Cmpss => (LegacyPrefixes::_F3, 0x0FC2, 2),
-                //SseOpcode::Cmpsd => (LegacyPrefixes::_F2, 0x0FC2, 2),
+                SseOpcode::Cmpss => (LegacyPrefixes::_F3, 0x0FC2, 2),
+                SseOpcode::Cmpsd => (LegacyPrefixes::_F2, 0x0FC2, 2),
                 SseOpcode::Insertps => (LegacyPrefixes::_66, 0x0F3A21, 3),
                 SseOpcode::Palignr => (LegacyPrefixes::_66, 0x0F3A0F, 3),
                 SseOpcode::Pinsrb => (LegacyPrefixes::_66, 0x0F3A20, 3),

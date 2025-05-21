@@ -1,7 +1,7 @@
 //! Assembler library implementation for x64.
 
 use crate::{
-    isa::{reg::Reg, CallingConvention},
+    isa::{self, reg::Reg, CallingConvention},
     masm::{
         DivKind, Extend, ExtendKind, ExtendType, IntCmpKind, MulWideKind, OperandSize, RemKind,
         RoundingMode, ShiftKind, Signed, V128ExtendKind, V128LoadExtendKind, Zero,
@@ -136,6 +136,36 @@ impl From<Reg> for XmmMemImm {
         XmmMemImm::unwrap_new(value.into())
     }
 }
+
+//---------------
+// impl From<Reg> for asm::Xmm {
+//     fn from(reg: Reg) -> Self {
+//         assert!(reg.is_float());
+//         asm::Xmm::new(reg.hw_enc() as u8)
+//     }
+// }
+
+// impl From<Reg> for asm::XmmMem<Xmm, Gpr> {
+//     fn from(reg: Reg) -> Self {
+//         assert!(reg.is_float());
+//         asm::XmmMem::xmm(asm::Xmm::from_reg(reg.into()))
+//     }
+// }
+
+// impl From<Reg> for asm::XmmMem<Xmm, Gpr> {
+//     fn from(reg: Reg) -> Self {
+//         assert!(reg.is_float());
+//         asm::XmmMem::Xmm(reg.into())
+//     }
+// }
+
+// impl From<Reg> for cranelift_codegen::isa::x64::inst::args::Xmm {
+//     fn from(reg: Reg) -> Self {
+//         assert!(reg.is_float());
+//         Xmm::new(reg.into())
+//     }
+// }
+//---------------
 
 impl From<OperandSize> for args::OperandSize {
     fn from(size: OperandSize) -> Self {
@@ -1379,17 +1409,23 @@ impl Assembler {
     /// Compares values in src1 and src2 and sets ZF, PF, and CF flags in EFLAGS
     /// register.
     pub fn ucomis(&mut self, src1: Reg, src2: Reg, size: OperandSize) {
-        let op = match size {
-            OperandSize::S32 => SseOpcode::Ucomiss,
-            OperandSize::S64 => SseOpcode::Ucomisd,
+    let src1_codegen: cranelift_codegen::Reg = src1.into();
+    let src2_codegen: cranelift_codegen::Reg = src2.into();
+    
+    let src1_xmm: asm::Xmm<Xmm> = src1_codegen.into();
+    let src2_mem: asm::XmmMem<Xmm, Gpr> = src2_codegen.into();
+        let inst = match size {
+            OperandSize::S32 => asm::inst::ucomiss_a::new(src1_xmm, src2_mem).into(),
+            OperandSize::S64 => asm::inst::ucomisd_a::new(src1_xmm, src2_mem).into(),
             OperandSize::S8 | OperandSize::S16 | OperandSize::S128 => unreachable!(),
         };
 
-        self.emit(Inst::XmmCmpRmR {
-            op,
-            src1: src1.into(),
-            src2: Xmm::from(src2).into(),
-        });
+        // self.emit(Inst::XmmCmpRmR {
+        //     op,
+        //     src1: src1.into(),
+        //     src2: Xmm::from(src2).into(),
+        // });
+        self.emit(Inst::External { inst });
     }
 
     pub fn popcnt(&mut self, src: Reg, size: OperandSize) {

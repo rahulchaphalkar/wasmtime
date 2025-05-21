@@ -138,23 +138,38 @@ pub fn generate_macro_inst_fn(f: &mut Formatter, inst: &Inst) {
                         // One write-only register output? Output the
                         // instruction and that register.
                         OperandKind::Reg(r) => {
+                        match inst.format.eflags_mutability() {
+                    EflagsMutability::R | EflagsMutability::RW | EflagsMutability::W => {
+                        fmtln!(f, "AssemblerOutputs::SideEffect {{ inst }}");
+                    },
+                    EflagsMutability::None => {
                             let ty = r.reg_class().unwrap().to_string();
                             let var = ty.to_lowercase();
                             fmtln!(f, "let {var} = {r}.as_ref().to_reg();");
                             fmtln!(f, "AssemblerOutputs::Ret{ty} {{ inst, {var} }}");
                         }
-                        _ => unimplemented!(),
+                }
+            }
+            _ => unreachable!(),
                     },
                     ReadWrite => match one.location.kind() {
                         OperandKind::Imm(_) => unreachable!(),
                         // One read/write register output? Output the instruction
                         // and that register.
                         OperandKind::Reg(r) | OperandKind::FixedReg(r) => {
+                            match inst.format.eflags_mutability() {
+                    EflagsMutability::R | EflagsMutability::RW | EflagsMutability::W => {
+                        fmtln!(f, "AssemblerOutputs::SideEffect {{ inst }}");
+                    },
+                    EflagsMutability::None => {
                             let ty = r.reg_class().unwrap().to_string();
                             let var = ty.to_lowercase();
                             fmtln!(f, "let {var} = {r}.as_ref().write.to_reg();",);
                             fmtln!(f, "AssemblerOutputs::Ret{ty} {{ inst, {var} }}");
+                    }
                         }
+                    }
+                    //_ => unreachable!(),
                         // One read/write memory operand? Output a side effect.
                         OperandKind::Mem(_) => {
                             fmtln!(f, "AssemblerOutputs::SideEffect {{ inst }}")
@@ -335,7 +350,8 @@ pub fn isle_constructors(format: &Format) -> Vec<IsleConstructor> {
                         RegClass::Xmm => {
                             match format.eflags_mutability() {
                                 EflagsMutability::R | EflagsMutability::RW | EflagsMutability::W => {
-                                    vec![IsleConstructor::RetMemorySideEffect, IsleConstructor::RetXmm]
+                                    //vec![IsleConstructor::RetMemorySideEffect, IsleConstructor::RetXmm]
+                                    vec![IsleConstructor::RetMemorySideEffect]
                                 },
                                 _ => { vec![IsleConstructor::RetXmm]}
                         }
@@ -343,7 +359,8 @@ pub fn isle_constructors(format: &Format) -> Vec<IsleConstructor> {
                         RegClass::Gpr => {
                             match format.eflags_mutability() {
                                 EflagsMutability::R | EflagsMutability::RW | EflagsMutability::W => {
-                                    vec![IsleConstructor::RetMemorySideEffect, IsleConstructor::RetGpr]
+                                    //vec![IsleConstructor::RetMemorySideEffect, IsleConstructor::RetGpr]
+                                    vec![IsleConstructor::RetMemorySideEffect]
                                 },
                                 _ => { vec![IsleConstructor::RetGpr]}
                             }
