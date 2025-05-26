@@ -825,8 +825,6 @@ pub(crate) enum InstructionSet {
 pub enum SseOpcode {
     Blendvpd,
     Blendvps,
-    Cmpss,
-    Cmpsd,
     Divps,
     Divpd,
     Divss,
@@ -931,7 +929,6 @@ impl SseOpcode {
     pub(crate) fn available_from(&self) -> InstructionSet {
         use InstructionSet::*;
         match self {
-            | SseOpcode::Cmpss
             | SseOpcode::Divps
             | SseOpcode::Divss
             | SseOpcode::Movaps
@@ -948,7 +945,6 @@ impl SseOpcode {
             | SseOpcode::Unpcklps
             | SseOpcode::Unpckhps => SSE,
 
-            | SseOpcode::Cmpsd
             | SseOpcode::Divpd
             | SseOpcode::Divsd
             | SseOpcode::Movapd
@@ -1073,8 +1069,6 @@ impl fmt::Debug for SseOpcode {
         let name = match self {
             SseOpcode::Blendvpd => "blendvpd",
             SseOpcode::Blendvps => "blendvps",
-            SseOpcode::Cmpss => "cmpss",
-            SseOpcode::Cmpsd => "cmpsd",
             SseOpcode::Divps => "divps",
             SseOpcode::Divpd => "divpd",
             SseOpcode::Divss => "divss",
