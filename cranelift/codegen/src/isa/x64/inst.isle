@@ -806,8 +806,8 @@
 (type SseOpcode extern
       (enum Blendvpd
             Blendvps
-            Comiss
-            Comisd
+            ; Comiss
+            ; Comisd
             Cmpss
             Cmpsd
             Divps

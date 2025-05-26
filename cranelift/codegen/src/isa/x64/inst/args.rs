@@ -825,10 +825,6 @@ pub(crate) enum InstructionSet {
 pub enum SseOpcode {
     Blendvpd,
     Blendvps,
-    Comiss,
-    Comisd,
-    Cmpps,
-    Cmppd,
     Cmpss,
     Cmpsd,
     Divps,
@@ -917,8 +913,6 @@ pub enum SseOpcode {
     Shufps,
     Sqrtss,
     Sqrtsd,
-    // Ucomiss,
-    // Ucomisd,
     Unpcklps,
     Unpcklpd,
     Unpckhps,
@@ -937,8 +931,6 @@ impl SseOpcode {
     pub(crate) fn available_from(&self) -> InstructionSet {
         use InstructionSet::*;
         match self {
-            SseOpcode::Comiss
-            | SseOpcode::Cmpps
             | SseOpcode::Cmpss
             | SseOpcode::Divps
             | SseOpcode::Divss
@@ -953,13 +945,10 @@ impl SseOpcode {
             | SseOpcode::Rsqrtss
             | SseOpcode::Shufps
             | SseOpcode::Sqrtss
-            //| SseOpcode::Ucomiss
             | SseOpcode::Unpcklps
             | SseOpcode::Unpckhps => SSE,
 
-            SseOpcode::Cmppd
             | SseOpcode::Cmpsd
-            | SseOpcode::Comisd
             | SseOpcode::Divpd
             | SseOpcode::Divsd
             | SseOpcode::Movapd
@@ -997,7 +986,6 @@ impl SseOpcode {
             | SseOpcode::Punpcklbw
             | SseOpcode::Punpcklwd
             | SseOpcode::Sqrtsd
-            //| SseOpcode::Ucomisd
             | SseOpcode::Punpckldq
             | SseOpcode::Punpckhdq
             | SseOpcode::Punpcklqdq
@@ -1085,12 +1073,8 @@ impl fmt::Debug for SseOpcode {
         let name = match self {
             SseOpcode::Blendvpd => "blendvpd",
             SseOpcode::Blendvps => "blendvps",
-            SseOpcode::Cmpps => "cmpps",
-            SseOpcode::Cmppd => "cmppd",
             SseOpcode::Cmpss => "cmpss",
             SseOpcode::Cmpsd => "cmpsd",
-            SseOpcode::Comiss => "comiss",
-            SseOpcode::Comisd => "comisd",
             SseOpcode::Divps => "divps",
             SseOpcode::Divpd => "divpd",
             SseOpcode::Divss => "divss",
@@ -1178,8 +1162,6 @@ impl fmt::Debug for SseOpcode {
             SseOpcode::Shufps => "shufps",
             SseOpcode::Sqrtss => "sqrtss",
             SseOpcode::Sqrtsd => "sqrtsd",
-            // SseOpcode::Ucomiss => "ucomiss",
-            // SseOpcode::Ucomisd => "ucomisd",
             SseOpcode::Unpcklps => "unpcklps",
             SseOpcode::Unpckhps => "unpckhps",
             SseOpcode::Punpckldq => "punpckldq",
