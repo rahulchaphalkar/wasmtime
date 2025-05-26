@@ -2689,12 +2689,9 @@ pub(crate) fn emit(
             let propagate_nan = sink.get_label();
             let do_min_max = sink.get_label();
 
-            let (add_op/*, cmp_op*/, and_op, or_op, min_max_op) = match size {
+            let (add_op, and_op, or_op, min_max_op) = match size {
                 OperandSize::Size32 => (
                     asm::inst::addss_a::new(dst, lhs).into(),
-                    //SseOpcode::Ucomiss,
-                    //asm::inst::ucomiss_a::<CraneliftRegisters>::new(dst.to_reg(), lhs).into::<Inst<CraneliftRegisters>>(),
-                    //Inst::x64_ucomis(*size, dst.to_reg(), RegMem::reg(lhs)),
                     asm::inst::andps_a::new(dst, lhs).into(),
                     asm::inst::orps_a::new(dst, lhs).into(),
                     if *is_min {
@@ -2705,9 +2702,6 @@ pub(crate) fn emit(
                 ),
                 OperandSize::Size64 => (
                     asm::inst::addsd_a::new(dst, lhs).into(),
-                    //SseOpcode::Ucomisd,
-                    //asm::inst::ucomisd_a::<CraneliftRegisters>::new(dst.to_reg(), lhs).into::<Inst<CraneliftRegisters>>(),
-                    //Inst::x64_ucomis(*size, dst.to_reg(), RegMem::reg(lhs)),
                     asm::inst::andpd_a::new(dst, lhs).into(),
                     asm::inst::orpd_a::new(dst, lhs).into(),
                     if *is_min {
@@ -2719,10 +2713,7 @@ pub(crate) fn emit(
                 _ => unreachable!(),
             };
 
-            // let inst = Inst::xmm_cmp_rm_r(cmp_op, dst.to_reg(), RegMem::reg(lhs));
             Inst::x64_ucomis(*size, dst.to_reg(), RegMem::reg(lhs)).emit(sink, info, state);
-            //Inst::External { inst }.emit(sink, info, state);
-            // inst.emit(sink, info, state);
 
             one_way_jmp(sink, CC::NZ, do_min_max);
             one_way_jmp(sink, CC::P, propagate_nan);
@@ -3156,9 +3147,9 @@ pub(crate) fn emit(
             //
             // done:
 
-            let (cast_op/*, cmp_op*/) = match src_size {
-                Size64 => (SseOpcode::Movq/*, SseOpcode::Ucomisd*/),
-                Size32 => (SseOpcode::Movd/*, SseOpcode::Ucomiss*/),
+            let (cast_op) = match src_size {
+                Size64 => SseOpcode::Movq,
+                Size32 => SseOpcode::Movd,
                 _ => unreachable!(),
             };
 
@@ -3185,7 +3176,6 @@ pub(crate) fn emit(
 
             // Check for NaN.
 
-            //let inst = Inst::xmm_cmp_rm_r(cmp_op, src, RegMem::reg(src));
             let inst = Inst::x64_ucomis(*src_size, src, RegMem::reg(src));
             inst.emit(sink, info, state);
 
@@ -3212,7 +3202,6 @@ pub(crate) fn emit(
                 let inst = asm::inst::xorpd_a::new(tmp_xmm, tmp_xmm.to_reg()).into();
                 Inst::External { inst }.emit(sink, info, state);
 
-                //let inst = Inst::xmm_cmp_rm_r(cmp_op, tmp_xmm.to_reg(), RegMem::reg(src));
                 let inst = Inst::x64_ucomis(*src_size, tmp_xmm.to_reg(), RegMem::reg(src));
                 inst.emit(sink, info, state);
 
@@ -3264,7 +3253,6 @@ pub(crate) fn emit(
                     Inst::gpr_to_xmm(cast_op, RegMem::reg(tmp_gpr.to_reg()), *src_size, tmp_xmm);
                 inst.emit(sink, info, state);
 
-                //let inst = Inst::xmm_cmp_rm_r(cmp_op, src, RegMem::reg(tmp_xmm.to_reg()));
                 let inst = Inst::x64_ucomis(*src_size, src, RegMem::reg(tmp_xmm.to_reg()));
                 inst.emit(sink, info, state);
 
@@ -3278,7 +3266,6 @@ pub(crate) fn emit(
                 let inst = asm::inst::xorpd_a::new(tmp_xmm, tmp_xmm.to_reg()).into();
                 Inst::External { inst }.emit(sink, info, state);
 
-                //let inst = Inst::xmm_cmp_rm_r(cmp_op, tmp_xmm.to_reg(), RegMem::reg(src));
                 let inst = Inst::x64_ucomis(*src_size, tmp_xmm.to_reg(), RegMem::reg(src));
                 inst.emit(sink, info, state);
 
@@ -3344,9 +3331,9 @@ pub(crate) fn emit(
 
             assert_ne!(tmp_xmm.to_reg(), src, "tmp_xmm clobbers src!");
 
-            let (cast_op/* , cmp_op */) = match src_size {
-                Size32 => (SseOpcode::Movd/* , SseOpcode::Ucomiss */),
-                Size64 => (SseOpcode::Movq/* , SseOpcode::Ucomisd */),
+            let (cast_op) = match src_size {
+                Size32 => SseOpcode::Movd,
+                Size64 => SseOpcode::Movq,
                 _ => unreachable!(),
             };
 
@@ -3390,7 +3377,6 @@ pub(crate) fn emit(
             let inst = Inst::gpr_to_xmm(cast_op, RegMem::reg(tmp_gpr.to_reg()), *src_size, tmp_xmm);
             inst.emit(sink, info, state);
 
-            //let inst = Inst::xmm_cmp_rm_r(cmp_op, src, RegMem::reg(tmp_xmm.to_reg()));
             let inst = Inst::x64_ucomis(*src_size, src, RegMem::reg(tmp_xmm.to_reg()));
             inst.emit(sink, info, state);
 
