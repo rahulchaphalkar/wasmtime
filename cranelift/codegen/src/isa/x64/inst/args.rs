@@ -929,7 +929,7 @@ impl SseOpcode {
     pub(crate) fn available_from(&self) -> InstructionSet {
         use InstructionSet::*;
         match self {
-            | SseOpcode::Divps
+            SseOpcode::Divps
             | SseOpcode::Divss
             | SseOpcode::Movaps
             | SseOpcode::Movlhps
@@ -945,7 +945,7 @@ impl SseOpcode {
             | SseOpcode::Unpcklps
             | SseOpcode::Unpckhps => SSE,
 
-            | SseOpcode::Divpd
+            SseOpcode::Divpd
             | SseOpcode::Divsd
             | SseOpcode::Movapd
             | SseOpcode::Movd

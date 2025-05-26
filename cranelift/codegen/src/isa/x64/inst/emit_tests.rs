@@ -2748,7 +2748,7 @@ fn test_x64_emit() {
     // ========================================================
     // XMM_CMP_RM_R
 
-/*     insns.push((
+    /*     insns.push((
         Inst::xmm_cmp_rm_r(SseOpcode::Ucomiss, xmm2, RegMem::reg(xmm1)),
         "0F2ED1",
         "ucomiss %xmm1, %xmm2",

@@ -1398,8 +1398,12 @@ impl Assembler {
     pub fn ucomis(&mut self, src1: Reg, src2: Reg, size: OperandSize) {
         let op = match size {
             //OperandSize::S32 => SseOpcode::Ucomiss,
-            OperandSize::S32 => Inst::x64_ucomis(size.into(), src1.into(), RegMem::reg(src2.into())),
-            OperandSize::S64 => Inst::x64_ucomis(size.into(), src1.into(), RegMem::reg(src2.into())),
+            OperandSize::S32 => {
+                Inst::x64_ucomis(size.into(), src1.into(), RegMem::reg(src2.into()))
+            }
+            OperandSize::S64 => {
+                Inst::x64_ucomis(size.into(), src1.into(), RegMem::reg(src2.into()))
+            }
             OperandSize::S8 | OperandSize::S16 | OperandSize::S128 => unreachable!(),
         };
 
