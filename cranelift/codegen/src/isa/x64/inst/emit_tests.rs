@@ -2748,7 +2748,7 @@ fn test_x64_emit() {
     // ========================================================
     // XMM_CMP_RM_R
 
-    insns.push((
+/*     insns.push((
         Inst::xmm_cmp_rm_r(SseOpcode::Ucomiss, xmm2, RegMem::reg(xmm1)),
         "0F2ED1",
         "ucomiss %xmm1, %xmm2",
@@ -2770,7 +2770,7 @@ fn test_x64_emit() {
         Inst::xmm_cmp_rm_r(SseOpcode::Ucomisd, xmm12, RegMem::reg(xmm11)),
         "66450F2EE3",
         "ucomisd %xmm11, %xmm12",
-    ));
+    )); */
 
     // ========================================================
     // XMM_RM_R: float binary ops
