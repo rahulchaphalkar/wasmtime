@@ -15,6 +15,8 @@
 //!
 //! [link]: https://software.intel.com/content/www/us/en/develop/articles/intel-sdm.html
 
+use crate::dsl::RegClass;
+
 use super::{Operand, OperandKind};
 use core::fmt;
 
@@ -195,22 +197,21 @@ impl Rex {
     /// Developer’s Manual, Volume 2A.
     fn validate(&self, operands: &[Operand]) {
         assert!(!(self.r && self.digit.is_some()));
-        //assert!(!(self.r && self.imm != Imm::None));
         assert!(
             !(self.w && (self.opcodes.prefixes.has_operand_size_override())),
             "though valid, if REX.W is set then the 66 prefix is ignored--avoid encoding this"
         );
 
-        // if self.opcodes.prefixes.has_operand_size_override() {
-        //     assert!(
-        //         operands.iter().all(|&op| matches!(
-        //             op.location.kind(),
-        //             OperandKind::Imm(_) | OperandKind::FixedReg(_)
-        //         ) || op.location.bits() == 16
-        //             || op.location.bits() == 128),
-        //         "when we encode the 66 prefix, we expect all operands to be 16-bit wide"
-        //     );
-        // }
+        if self.opcodes.prefixes.has_operand_size_override() {
+            assert!(
+                operands.iter().all(|&op| matches!(
+                    op.location.kind(),
+                    OperandKind::Imm(_) | OperandKind::FixedReg(_)
+                ) || op.location.bits() == 16
+                    || op.location.reg_class() == Some(RegClass::Xmm)),
+                "when we encode the 66 prefix, we expect all operands to be 16-bit wide"
+            );
+        }
 
         if let Some(OperandKind::Imm(op)) = operands
             .iter()

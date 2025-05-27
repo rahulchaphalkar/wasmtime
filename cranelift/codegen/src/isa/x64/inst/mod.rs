@@ -386,33 +386,28 @@ impl Inst {
     pub fn x64_ucomis(size: OperandSize, src1: Reg, src2: RegMem) -> Self {
         debug_assert!(src1.class() == RegClass::Float);
         let inst = match size {
-            OperandSize::Size32 => {
-                match src2 {
-                    RegMem::Reg { reg } => {
-                        // Convert Reg to Xmm
-                        debug_assert!(reg.class() == RegClass::Float);
-                        //let xmm = asm::Xmm::new(Xmm::unwrap_new(reg));
-                        //let xmm = asm::XmmMem::Xmm(read_xmm_mem(reg));
-                        asm::inst::ucomiss_a::new(src1, reg).into()
-                    }
-                    _ => unreachable!("no mem operand right now, todo"),
-                    // RegMem::Mem { addr } => {
-                    //     // let addr = addr.into();
-                    //     // asm::inst::ucomiss_a::new(src1, addr).into()
-                    // }
+            OperandSize::Size32 => match src2 {
+                RegMem::Reg { reg } => {
+                    debug_assert!(reg.class() == RegClass::Float);
+                    asm::inst::ucomiss_a::new(src1, reg).into()
                 }
-            }
-            OperandSize::Size64 => {
-                match src2 {
-                    RegMem::Reg { reg } => {
-                        // Convert Reg to Xmm
-                        debug_assert!(reg.class() == RegClass::Float);
-                        asm::inst::ucomisd_a::new(src1, reg).into()
-                    }
-                    _ => unreachable!("no mem operand right now, todo"),
-                    //OperandSize::Size64 => asm::inst::ucomisd_a::new(src1, src2.into()).into(),
+                RegMem::Mem { addr } => {
+                    let xmm = Xmm::unwrap_new(src1);
+                    let xmm_mem = asm::XmmMem::Mem(addr.into());
+                    asm::inst::ucomiss_a::new(xmm, xmm_mem).into()
                 }
-            }
+            },
+            OperandSize::Size64 => match src2 {
+                RegMem::Reg { reg } => {
+                    debug_assert!(reg.class() == RegClass::Float);
+                    asm::inst::ucomisd_a::new(src1, reg).into()
+                }
+                RegMem::Mem { addr } => {
+                    let xmm = Xmm::unwrap_new(src1);
+                    let xmm_mem = asm::XmmMem::Mem(addr.into());
+                    asm::inst::ucomisd_a::new(xmm, xmm_mem).into()
+                }
+            },
             _ => unreachable!("ucomis only supports 32 and 64 bit operands"),
         };
         Inst::External { inst }

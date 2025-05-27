@@ -895,8 +895,6 @@
             Sqrtpd
             Sqrtss
             Sqrtsd
-            ; Ucomiss
-            ; Ucomisd
             Unpcklps
             Unpcklpd
             Unpckhps

@@ -135,7 +135,7 @@ pub struct Format {
     /// These operands should match the "Instruction" column in the reference
     /// manual.
     pub operands: Vec<Operand>,
-    /// This eflags should match eflags description of an instruction.
+    /// This should match eflags description of an instruction.
     pub eflags: EflagsMutability,
 }
 
@@ -170,15 +170,15 @@ impl Format {
         self.locations().map(Location::kind).collect()
     }
 
-    /// Set the EFLAGS mutability for this instruction
+    /// Set the EFLAGS mutability for this instruction.
     pub fn flags(mut self, eflags: EflagsMutability) -> Self {
         self.eflags = eflags;
         self
     }
 
-    /// Return the EFLAGS mutability for this instruction
-    pub fn eflags_mutability(&self) -> EflagsMutability {
-        self.eflags
+    /// Return true if an instruction uses EFLAGS.
+    pub fn uses_eflags(&self) -> bool {
+        self.eflags != EflagsMutability::None
     }
 }
 

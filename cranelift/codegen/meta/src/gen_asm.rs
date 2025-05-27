@@ -253,7 +253,7 @@ pub enum IsleConstructor {
     /// `mul`).
     RetValueRegs,
 
-    /// TODO
+    /// This constructor does not return any results, but produces a side effect affecting EFLAGs.
     NoReturnSideEffect,
 }
 
@@ -286,9 +286,11 @@ impl IsleConstructor {
     /// Returns the suffix used in the ISLE constructor name.
     pub fn suffix(&self) -> &'static str {
         match self {
-            IsleConstructor::NoReturnSideEffect => "",
             IsleConstructor::RetMemorySideEffect => "_mem",
-            IsleConstructor::RetGpr | IsleConstructor::RetXmm | IsleConstructor::RetValueRegs => "",
+            IsleConstructor::RetGpr
+            | IsleConstructor::RetXmm
+            | IsleConstructor::RetValueRegs
+            | IsleConstructor::NoReturnSideEffect => "",
         }
     }
 }
@@ -302,7 +304,7 @@ pub fn isle_param_for_ctor(op: &Operand, ctor: IsleConstructor) -> String {
         // other constructor it's operating on registers so the argument is
         // a `Gpr`.
         OperandKind::RegMem(_) if op.mutability.is_write() => match ctor {
-            IsleConstructor::NoReturnSideEffect => "".to_string(), // TODO
+            IsleConstructor::NoReturnSideEffect => "".to_string(),
             IsleConstructor::RetMemorySideEffect => "Amode".to_string(),
             IsleConstructor::RetGpr => "Gpr".to_string(),
             IsleConstructor::RetXmm => "Xmm".to_string(),
