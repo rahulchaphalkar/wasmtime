@@ -455,6 +455,22 @@ fn hello_wasi_snapshot0_from_stdin() -> Result<()> {
     Ok(())
 }
 
+#[cfg(feature = "vtune")]
+#[test]
+fn run_in_vtune() -> Result<()> {
+    let wasm = build_wasm("tests/all/cli_tests/simple.wat")?;
+    run_wasmtime(&[
+        "run",
+        wasm.path().to_str().unwrap(),
+        "--vtune",
+        "--invoke",
+        "simple",
+        "--disable-cache",
+        "4",
+    ])?;
+    Ok(())
+}
+
 #[test]
 fn specify_env() -> Result<()> {
     // By default no env is inherited

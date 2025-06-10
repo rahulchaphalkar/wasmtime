@@ -20,6 +20,9 @@ on:
     # tag at the end of CI if successful and the tag will trigger the artifact
     # uploads as well as publication to crates.io.
     - 'release-*'
+  
+  # Manually trigger workflow
+  workflow_dispatch:
 
   # Allow manually triggering this request via a button or another workflow.
   workflow_dispatch:
@@ -35,6 +38,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Check VTune Profiler functionality
+  vtune_test:
+    name: VTune Test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: abrown/install-vtune-action@422bb78743d724527974d5353dcfa423a8d1d303
+    - run: vtune -collect hotspots -result-dir=/tmp/vtune-results sleep 5
+    - run: ls /tmp/vtune-results/data.0/*.jit
+
   # Check Code style quickly by running `rustfmt` over all code
   rustfmt:
     name: Rustfmt
