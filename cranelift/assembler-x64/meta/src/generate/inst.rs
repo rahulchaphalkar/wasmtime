@@ -237,15 +237,6 @@ impl dsl::Inst {
                             let to_string = location.generate_to_string(op.extension);
                             fmtln!(f, "let {location} = {to_string};");
                         }
-                        if self.custom.contains(Display) {
-                            fmtln!(
-                                f,
-                                "let name = crate::custom::display::{}(self);",
-                                self.name()
-                            )
-                        } else {
-                            fmtln!(f, "let name = \"{}\";", self.mnemonic);
-                        }
                         let ordered_ops = self.format.generate_att_style_operands();
                         let mut implicit_ops = self.format.generate_implicit_operands();
                         if self.has_trap {
@@ -256,7 +247,22 @@ impl dsl::Inst {
                                 implicit_ops.push_str(", {trap}");
                             }
                         }
-                        fmtln!(f, "write!(f, \"{{name}} {ordered_ops}{implicit_ops}\")");
+                        if self.custom.contains(Display) {
+                            fmtln!(
+                                f,
+                                "let sequence = crate::custom::display::{}(self, format!(\"{}\"));",
+                                self.name(),
+                                ordered_ops
+                            )
+                        } else {
+                            fmtln!(f, "let ordered_ops = format!(\"{}\");", ordered_ops);
+                            fmtln!(
+                                f,
+                                "let sequence = format!(\"{} {{ordered_ops}}\");",
+                                self.mnemonic
+                            );
+                        }
+                        fmtln!(f, "write!(f, \"{{sequence}}{implicit_ops}\")");
                     },
                 );
             },

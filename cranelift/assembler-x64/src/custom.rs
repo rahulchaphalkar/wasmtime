@@ -1,11 +1,11 @@
 pub mod display {
     use crate::inst;
     use crate::{Registers, XmmMem};
-
     macro_rules! lock {
         ($name:tt) => {
-            pub fn $name<R: Registers>(inst: &inst::$name<R>) -> String {
-                format!("lock {}", &inst.mnemonic()[5..])
+            pub fn $name<R: Registers>(inst: &inst::$name<R>, ordered_ops: String) -> String {
+                let name = format!("lock {}", &inst.mnemonic()[5..]);
+                format!("{} {}", name, ordered_ops)
             }
         };
     }
@@ -87,18 +87,97 @@ pub mod display {
     lock!(lock_xorl_mr);
     lock!(lock_xorq_mr);
 
-    pub fn vcvtpd2ps_a<R: Registers>(inst: &inst::vcvtpd2ps_a<R>) -> String {
-        match inst.xmm_m128 {
+    pub fn vcvtpd2ps_a<R: Registers>(inst: &inst::vcvtpd2ps_a<R>, ordered_ops: String) -> String {
+        let name = match inst.xmm_m128 {
             XmmMem::Xmm(_) => "vcvtpd2ps".to_string(),
             XmmMem::Mem(_) => "vcvtpd2psx".to_string(),
-        }
+        };
+        format!("{name} {ordered_ops}")
     }
 
-    pub fn vcvttpd2dq_a<R: Registers>(inst: &inst::vcvttpd2dq_a<R>) -> String {
-        match inst.xmm_m128 {
+    pub fn vcvttpd2dq_a<R: Registers>(inst: &inst::vcvttpd2dq_a<R>, ordered_ops: String) -> String {
+        let name = match inst.xmm_m128 {
             XmmMem::Xmm(_) => "vcvttpd2dq".to_string(),
             XmmMem::Mem(_) => "vcvttpd2dqx".to_string(),
-        }
+        };
+        format!("{name} {ordered_ops}")
+    }
+
+    pub fn cmpps_a<R: Registers>(inst: &inst::cmpps_a<R>, ordered_ops: String) -> String {
+        let name = match inst.imm8.value() {
+            0 => "cmpeqps".to_string(),
+            1 => "cmpltps".to_string(),
+            2 => "cmpleps".to_string(),
+            3 => "cmpunordps".to_string(),
+            4 => "cmpneqps".to_string(),
+            5 => "cmpnltps".to_string(),
+            6 => "cmpnleps".to_string(),
+            7 => "cmpordps".to_string(),
+            _ => return format!("{} {ordered_ops}", inst.mnemonic().to_string()),
+        };
+        let ordered_ops = ordered_ops
+            .split_once(", ")
+            .map(|(_, rest)| rest.to_string())
+            .unwrap_or(ordered_ops);
+
+        format!("{name} {ordered_ops}")
+    }
+
+    pub fn cmpss_a<R: Registers>(inst: &inst::cmpss_a<R>, ordered_ops: String) -> String {
+        let name = match inst.imm8.value() {
+            0 => "cmpeqss".to_string(),
+            1 => "cmpltss".to_string(),
+            2 => "cmpless".to_string(),
+            3 => "cmpunordss".to_string(),
+            4 => "cmpneqss".to_string(),
+            5 => "cmpnltss".to_string(),
+            6 => "cmpnless".to_string(),
+            7 => "cmpordss".to_string(),
+            _ => return format!("{} {ordered_ops}", inst.mnemonic().to_string()),
+        };
+        let ordered_ops = ordered_ops
+            .split_once(", ")
+            .map(|(_, rest)| rest.to_string())
+            .unwrap_or(ordered_ops);
+        format!("{name} {ordered_ops}")
+    }
+
+    pub fn cmpsd_a<R: Registers>(inst: &inst::cmpsd_a<R>, ordered_ops: String) -> String {
+        let name = match inst.imm8.value() {
+            0 => "cmpeqsd".to_string(),
+            1 => "cmpltsd".to_string(),
+            2 => "cmplesd".to_string(),
+            3 => "cmpunordsd".to_string(),
+            4 => "cmpneqsd".to_string(),
+            5 => "cmpnltsd".to_string(),
+            6 => "cmpnlesd".to_string(),
+            7 => "cmpordsd".to_string(),
+            _ => return format!("{} {ordered_ops}", inst.mnemonic().to_string()),
+        };
+        let ordered_ops = ordered_ops
+            .split_once(", ")
+            .map(|(_, rest)| rest.to_string())
+            .unwrap_or(ordered_ops);
+        format!("{name} {ordered_ops}")
+    }
+
+    pub fn cmppd_a<R: Registers>(inst: &inst::cmppd_a<R>, ordered_ops: String) -> String {
+        let name = match inst.imm8.value() {
+            0 => "cmpeqpd".to_string(),
+            1 => "cmpltpd".to_string(),
+            2 => "cmplepd".to_string(),
+            3 => "cmpunordpd".to_string(),
+            4 => "cmpneqpd".to_string(),
+            5 => "cmpnltpd".to_string(),
+            6 => "cmpnlepd".to_string(),
+            7 => "cmpordpd".to_string(),
+            _ => return format!("{} {ordered_ops}", inst.mnemonic().to_string()),
+        };
+        let ordered_ops = ordered_ops
+            .split_once(", ")
+            .map(|(_, rest)| rest.to_string())
+            .unwrap_or(ordered_ops);
+        format!("{name} {ordered_ops}")
     }
 }
 
