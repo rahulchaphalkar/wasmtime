@@ -770,7 +770,6 @@ pub enum SseOpcode {
     Blendvpd,
     Blendvps,
     Insertps,
-    Movlhps,
     Pabsb,
     Pabsw,
     Pabsd,
@@ -812,8 +811,10 @@ impl SseOpcode {
     pub(crate) fn available_from(&self) -> InstructionSet {
         use InstructionSet::*;
         match self {
-            SseOpcode::Movlhps | SseOpcode::Rcpss | SseOpcode::Rsqrtss | SseOpcode::Shufps => SSE,
-            SseOpcode::Packssdw
+            SseOpcode::Rcpss
+            | SseOpcode::Rsqrtss
+            | SseOpcode::Shufps => SSE,
+            | SseOpcode::Packssdw
             | SseOpcode::Packsswb
             | SseOpcode::Packuswb
             | SseOpcode::Pavgb
@@ -872,7 +873,6 @@ impl fmt::Debug for SseOpcode {
             SseOpcode::Blendvpd => "blendvpd",
             SseOpcode::Blendvps => "blendvps",
             SseOpcode::Insertps => "insertps",
-            SseOpcode::Movlhps => "movlhps",
             SseOpcode::Pabsb => "pabsb",
             SseOpcode::Pabsw => "pabsw",
             SseOpcode::Pabsd => "pabsd",
@@ -1023,7 +1023,6 @@ impl AvxOpcode {
             | AvxOpcode::Vpcmpgtw
             | AvxOpcode::Vpcmpgtd
             | AvxOpcode::Vpcmpgtq
-            | AvxOpcode::Vmovlhps
             | AvxOpcode::Vpminsb
             | AvxOpcode::Vpminsw
             | AvxOpcode::Vpminsd

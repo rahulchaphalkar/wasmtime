@@ -578,7 +578,6 @@
 
 (type SseOpcode extern
       (enum Insertps
-            Movlhps
             Pabsb
             Pabsw
             Pabsd
@@ -985,7 +984,6 @@
             Vminpd
             Vmaxps
             Vmaxpd
-            Vmovlhps
             Vpmaxsb
             Vpmaxsw
             Vpmaxsd
@@ -3332,12 +3330,8 @@
         (xmm_rmir_vex (AvxOpcode.Vmovss) src1 src2))
 
 ;; Helper for creating `movlhps` instructions.
-(decl x64_movlhps (Xmm XmmMem) Xmm)
-(rule 0 (x64_movlhps src1 src2)
-      (xmm_rm_r (SseOpcode.Movlhps) src1 src2))
-(rule 1 (x64_movlhps src1 src2)
-      (if-let true (use_avx))
-      (xmm_rmir_vex (AvxOpcode.Vmovlhps) src1 src2))
+(decl x64_movlhps (Xmm Xmm) Xmm)
+(rule (x64_movlhps src1 src2) (x64_movlhps_rm_or_avx src1 src2))
 
 ;; Helpers for creating `pmaxs*` instructions.
 (decl x64_pmaxs (Type Xmm XmmMem) Xmm)
