@@ -103,24 +103,33 @@ pub mod display {
         format!("{name} {ordered_ops}")
     }
 
-    pub fn cmpps_a<R: Registers>(inst: &inst::cmpps_a<R>, ordered_ops: String) -> String {
+    pub fn cmpps_a<R: Registers>(f: &mut std::fmt::Formatter, inst: &inst::cmpps_a<R>) -> std::fmt::Result {
         let name = match inst.imm8.value() {
-            0 => "cmpeqps".to_string(),
-            1 => "cmpltps".to_string(),
-            2 => "cmpleps".to_string(),
-            3 => "cmpunordps".to_string(),
-            4 => "cmpneqps".to_string(),
-            5 => "cmpnltps".to_string(),
-            6 => "cmpnleps".to_string(),
-            7 => "cmpordps".to_string(),
-            _ => return format!("{} {ordered_ops}", inst.mnemonic().to_string()),
+            0 => "cmpeqps",
+            1 => "cmpltps",
+            2 => "cmpleps",
+            3 => "cmpunordps",
+            4 => "cmpneqps",
+            5 => "cmpnltps",
+            6 => "cmpnleps",
+            7 => "cmpordps",
+            //_ => panic!("ok"),
+           //_ => //return format!("{} {ordered_ops}", inst.mnemonic().to_string()),
+            _ => write!()
         };
-        let ordered_ops = ordered_ops
+        let xmm1 = inst.xmm1.to_string(); // cranelift/assembler-x64/meta/src/generate/inst.rs:248
+        let xmm_m128 = inst.xmm_m128.to_string(); // cranelift/assembler-x64/meta/src/generate/inst.rs:248
+        //let imm8 = inst.imm8.to_string();
+
+        write!(f, "{name}, {xmm_m128} {xmm1}")
+        //inst.
+        /*let ordered_ops = ordered_ops
             .split_once(", ")
             .map(|(_, rest)| rest.to_string())
             .unwrap_or(ordered_ops);
 
         format!("{name} {ordered_ops}")
+        */
     }
 
     pub fn cmpss_a<R: Registers>(inst: &inst::cmpss_a<R>, ordered_ops: String) -> String {

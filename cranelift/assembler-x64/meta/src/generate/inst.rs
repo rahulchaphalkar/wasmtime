@@ -61,6 +61,8 @@ impl dsl::Inst {
             f.empty_line();
             self.generate_mnemonic_function(f);
             f.empty_line();
+            // self.generate_operands_function(f);
+            // f.empty_line();
             self.generate_encode_function(f);
             f.empty_line();
             self.generate_visit_function(f);
@@ -103,6 +105,14 @@ impl dsl::Inst {
             fmtln!(f, "\"{}\"", self.mnemonic);
         });
     }
+
+    /// todo
+    // pub fn generate_operands_function(&self, f: &mut Formatter) {
+    //     fmtln!(f, "#[must_use]");
+    //     f.add_block(&format!("pub fn operands(&self) -> Vec<Operands>"), |f| {
+    //         fmtln!(f, "{:?}", self.format.operands);
+    //     });
+    // }
 
     /// `fn encode(&self, ...) { ... }`
     fn generate_encode_function(&self, f: &mut Formatter) {
@@ -237,6 +247,11 @@ impl dsl::Inst {
                             let to_string = location.generate_to_string(op.extension);
                             fmtln!(f, "let {location} = {to_string};");
                         }
+                        if self.mnemonic == "cmpps" {
+                            fmtln!(f, "crate::custom::display::{}(f, self)",
+                            self.name());
+                            return;
+                        }
                         let ordered_ops = self.format.generate_att_style_operands();
                         let mut implicit_ops = self.format.generate_implicit_operands();
                         if self.has_trap {
@@ -247,7 +262,7 @@ impl dsl::Inst {
                                 implicit_ops.push_str(", {trap}");
                             }
                         }
-                        if self.custom.contains(Display) {
+                        if self.custom.contains(Display) && self.mnemonic != "cmpps" {
                             fmtln!(
                                 f,
                                 "let sequence = crate::custom::display::{}(self, format!(\"{}\"));",
