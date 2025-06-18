@@ -90,6 +90,13 @@ impl dsl::Format {
         self.generate_immediate(f, style);
     }
 
+    pub fn generate_evex_encoding(&self, f: &mut Formatter, vex: &dsl::Evex) {
+        // let style = self.generate_vex_prefix(f, vex);
+        // evex.generate_opcode(f);
+        // self.generate_modrm_byte(f, style);
+        // self.generate_immediate(f, style);
+    }
+
     /// `buf.put1(...);`
     fn generate_prefixes(&self, f: &mut Formatter, rex: &dsl::Rex) {
         if !rex.opcodes.prefixes.is_empty() {
