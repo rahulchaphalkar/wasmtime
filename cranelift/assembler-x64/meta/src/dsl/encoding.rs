@@ -56,7 +56,7 @@ pub fn evex(length: EvexLength) -> Evex {
         opcode: u8::MAX,
         modrm: None,
         imm: Imm::None,
-        is4: false,
+        //is4: false,
         b: false,
         // z: EvexZ::Merging,
         // k: None,
@@ -1229,55 +1229,6 @@ impl fmt::Display for EvexLength {
 
 /// Defines the EVEX masking behavior; masking support is described in section 2.6.4 of the Intel
 /// Software Development Manual, volume 2A.
-#[allow(dead_code, missing_docs)] // Masking is not yet used.
-pub enum EvexZ {
-    /// Zeroing: masked-off elements are set to zero
-    Zeroing,
-    /// Merging: masked-off elements are merged from the destination
-    Merging,
-}
-
-impl Default for EvexZ {
-    fn default() -> Self {
-        // Default to merging behavior when not specified
-        EvexZ::Merging
-    }
-}
-
-// pub enum EvexMasking {
-//     None,
-//     Merging { k: u8 },
-//     Zeroing { k: u8 },
-// }
-
-// impl Default for EvexMasking {
-//     fn default() -> Self {
-//         EvexMasking::None
-//     }
-// }
-
-// impl EvexMasking {
-//     /// Encode the `z` bit for merging with the P2 byte.
-//     pub fn z_bit(&self) -> u8 {
-//         match self {
-//             Self::None | Self::Merging { .. } => 0,
-//             Self::Zeroing { .. } => 1,
-//         }
-//     }
-
-//     /// Encode the `aaa` bits for merging with the P2 byte.
-//     pub fn aaa_bits(&self) -> u8 {
-//         match self {
-//             Self::None => 0b000,
-//             Self::Merging { k } | Self::Zeroing { k } => {
-//                 debug_assert!(*k <= 7);
-//                 *k
-//             }
-//         }
-//     }
-// }
-
-/// Controls EVEX masking behavior with mask register and zeroing/merging
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EvexMasking {
     /// The mask register to use (1-7 for k1-k7)
@@ -1289,7 +1240,10 @@ pub struct EvexMasking {
 impl EvexMasking {
     /// Create a new masking with the specified k register (1-7) and merging behavior
     pub fn new(k_reg: u8) -> Self {
-        assert!(k_reg >= 1 && k_reg <= 7, "k register must be between 1 and 7");
+        assert!(
+            k_reg >= 1 && k_reg <= 7,
+            "k register must be between 1 and 7"
+        );
         Self {
             k_reg,
             zeroing: false,
@@ -1297,9 +1251,17 @@ impl EvexMasking {
     }
 
     /// Set zeroing behavior
-    pub fn zeroing(mut self) -> Self {
+    pub fn set_zeroing(mut self) -> Self {
         self.zeroing = true;
         self
+    }
+
+    pub fn k_reg(&self) -> u8 {
+        self.k_reg
+    }
+
+    pub fn zeroing(&self) -> bool {
+        self.zeroing
     }
 }
 
@@ -1322,15 +1284,11 @@ pub struct Evex {
     /// See [`Rex.imm`](Rex.imm).
     pub imm: Imm,
     /// See [`Vex::is4`]
-    pub is4: bool,
+    // pub is4: bool,
     /// Embedded broadcast
     pub b: bool,
-    // /// Zeroing bit
-    // pub z: EvexZ,
-    // /// Opmask register
-    // pub k: EvexK,
     /// Optional masking configuration
-    masking: Option<EvexMasking>,
+    pub masking: Option<EvexMasking>,
 }
 
 impl Evex {
@@ -1442,15 +1400,12 @@ impl Evex {
         Self { b: true, ..self }
     }
 
-    // /// Set zeroing behavior (Z=1): masked-off elements are set to zero
-    // pub fn z(mut self) -> Self {
-    //     self.z = EvexZ::Zeroing;
-    //     self
-    // }
-
     /// Apply masking with the specified k register (1-7)
     pub fn k(mut self, reg_num: u8) -> Self {
-        assert!(reg_num >= 1 && reg_num <= 7, "k register must be between 1 and 7");
+        assert!(
+            reg_num >= 1 && reg_num <= 7,
+            "k register must be between 1 and 7"
+        );
         self.masking = Some(EvexMasking::new(reg_num));
         self
     }
@@ -1458,9 +1413,8 @@ impl Evex {
     /// Set zeroing behavior for masked operations
     pub fn z(mut self) -> Self {
         if let Some(masking) = self.masking.as_mut() {
-            *masking = masking.zeroing();
+            *masking = masking.set_zeroing();
         } else {
-            // Alternatively, panic if z() called without k-reg
             panic!("z() can only be used after setting a k-register");
         }
         self
@@ -1469,6 +1423,15 @@ impl Evex {
     fn validate(&self, _operands: &[Operand]) {
         assert!(self.opcode != u8::MAX);
         assert!(self.mmmmm.is_some());
+    }
+
+    /// Retrieve the digit extending the opcode, if available.
+    #[must_use]
+    pub fn unwrap_digit(&self) -> Option<u8> {
+        match self.modrm {
+            Some(ModRmKind::Digit(digit)) => Some(digit),
+            _ => None,
+        }
     }
 }
 

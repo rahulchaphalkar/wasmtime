@@ -90,8 +90,8 @@ impl dsl::Format {
         self.generate_immediate(f, style);
     }
 
-    pub fn generate_evex_encoding(&self, f: &mut Formatter, vex: &dsl::Evex) {
-        // let style = self.generate_vex_prefix(f, vex);
+    pub fn generate_evex_encoding(&self, f: &mut Formatter, evex: &dsl::Evex) {
+        let style = self.generate_evex_prefix(f, evex);
         // evex.generate_opcode(f);
         // self.generate_modrm_byte(f, style);
         // self.generate_immediate(f, style);
@@ -307,6 +307,114 @@ impl dsl::Format {
         fmtln!(f, "vex.encode(buf);");
         style
     }
+
+    fn generate_evex_prefix(&self, f: &mut Formatter, evex: &dsl::Evex) -> ModRmStyle {
+        use dsl::OperandKind::{FixedReg, Imm, Mem, Reg, RegMem};
+
+        f.empty_line();
+        f.comment("Emit EVEX prefix.");
+        let (l_bit, l_prime_bit) = evex.length.bits();
+        fmtln!(f, "let ll = ({:#02b}, {:#02b});", l_bit, l_prime_bit);
+        fmtln!(f, "let pp = {:#04b};", evex.pp.map_or(0b00, |pp| pp.bits()));
+        fmtln!(f, "let mmmmm = {:#07b};", evex.mmmmm.unwrap().bits());
+        fmtln!(f, "let w = {};", evex.w.as_bool());
+        fmtln!(f, "let b = {};", evex.b);
+
+        let bits = if let Some(masking) = &evex.masking {
+            fmtln!(f, "let k_reg = {};", masking.k_reg());
+            fmtln!(f, "let zeroing = {};", masking.zeroing());
+            //let bits = "ll, pp, mmmmm, w, b, Some((k_reg, zeroing))";
+            format!("ll, pp, mmmmm, w, b, Some((k_reg, zeroing))")
+        } else {
+            //let bits = "ll, pp, mmmmm, w, b, None";
+            format!("ll, pp, mmmmm, w, b, None")
+        };
+
+        let style = match self.operands_by_kind().as_slice() {
+            [Reg(reg), Reg(vvvv), Reg(rm)] => {
+                //assert!(!vex.is4);
+                fmtln!(f, "let reg = self.{reg}.enc();");
+                fmtln!(f, "let vvvv = self.{vvvv}.enc();");
+                fmtln!(f, "let rm = self.{rm}.encode_bx_regs();");
+                fmtln!(f, "let evex = EvexPrefix::new(reg, vvvv, rm, {bits});");
+                ModRmStyle::Reg {
+                    reg: ModRmReg::Reg(*reg),
+                    rm: *rm,
+                }
+            }
+            [Reg(reg), Reg(vvvv), RegMem(rm)]
+            | [Reg(reg), Reg(vvvv), Mem(rm)]
+            | [Reg(reg), Reg(vvvv), RegMem(rm), Imm(_) | FixedReg(_)]
+            | [Reg(reg), RegMem(rm), Reg(vvvv)] => {
+                //assert!(!vex.is4);
+                fmtln!(f, "let reg = self.{reg}.enc();");
+                fmtln!(f, "let vvvv = self.{vvvv}.enc();");
+                fmtln!(f, "let rm = self.{rm}.encode_bx_regs();");
+                fmtln!(f, "let evex = EvexPrefix::new(reg, vvvv, rm, {bits});");
+                ModRmStyle::RegMem {
+                    reg: ModRmReg::Reg(*reg),
+                    rm: *rm,
+                }
+            }
+            [Reg(reg), Reg(vvvv), RegMem(rm), Reg(is4)] => {
+                //assert!(vex.is4);
+                fmtln!(f, "let reg = self.{reg}.enc();");
+                fmtln!(f, "let vvvv = self.{vvvv}.enc();");
+                fmtln!(f, "let rm = self.{rm}.encode_bx_regs();");
+                fmtln!(f, "let evex = EvexPrefix::new(reg, vvvv, rm, {bits});");
+                ModRmStyle::RegMemIs4 {
+                    reg: ModRmReg::Reg(*reg),
+                    rm: *rm,
+                    is4: *is4,
+                }
+            }
+            [Reg(reg_or_vvvv), RegMem(rm)]
+            | [RegMem(rm), Reg(reg_or_vvvv)]
+            | [Reg(reg_or_vvvv), RegMem(rm), Imm(_)] => match evex.unwrap_digit() {
+                Some(digit) => {
+                    //assert!(!vex.is4);
+                    let vvvv = reg_or_vvvv;
+                    fmtln!(f, "let reg = {digit:#x};");
+                    fmtln!(f, "let vvvv = self.{vvvv}.enc();");
+                    fmtln!(f, "let rm = self.{rm}.encode_bx_regs();");
+                    fmtln!(f, "let evex = EvexPrefix::new(reg, vvvv, rm, {bits});");
+                    ModRmStyle::RegMem {
+                        reg: ModRmReg::Digit(digit),
+                        rm: *rm,
+                    }
+                }
+                None => {
+                    //assert!(!vex.is4);
+                    let reg = reg_or_vvvv;
+                    fmtln!(f, "let reg = self.{reg}.enc();");
+                    fmtln!(f, "let vvvv = {};", "0b0");
+                    fmtln!(f, "let rm = self.{rm}.encode_bx_regs();");
+                    fmtln!(f, "let evex = EvexPrefix::new(reg, vvvv, rm, {bits});");
+                    ModRmStyle::RegMem {
+                        reg: ModRmReg::Reg(*reg),
+                        rm: *rm,
+                    }
+                }
+            },
+            [Reg(reg), Reg(rm)] => {
+                //assert!(!vex.is4);
+                fmtln!(f, "let reg = self.{reg}.enc();");
+                fmtln!(f, "let vvvv = 0;");
+                fmtln!(f, "let rm = (Some(self.{rm}.enc()), None);");
+                fmtln!(f, "let evex = EvexPrefix::new(reg, vvvv, rm, {bits});");
+                ModRmStyle::Reg {
+                    reg: ModRmReg::Reg(*reg),
+                    rm: *rm,
+                }
+            }
+            unknown => unimplemented!("unknown pattern: {unknown:?}"),
+        };
+        fmtln!(f, "evex.encode(buf);");
+        style
+    }
+
+    //}
+    //}
 
     fn generate_modrm_byte(&self, f: &mut Formatter, modrm_style: ModRmStyle) {
         let operands = self.operands_by_kind();
