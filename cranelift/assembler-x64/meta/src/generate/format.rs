@@ -92,9 +92,9 @@ impl dsl::Format {
 
     pub fn generate_evex_encoding(&self, f: &mut Formatter, evex: &dsl::Evex) {
         let style = self.generate_evex_prefix(f, evex);
-        // evex.generate_opcode(f);
-        // self.generate_modrm_byte(f, style);
-        // self.generate_immediate(f, style);
+        evex.generate_opcode(f);
+        self.generate_modrm_byte(f, style);
+        self.generate_immediate(f, style);
     }
 
     /// `buf.put1(...);`
@@ -413,9 +413,6 @@ impl dsl::Format {
         style
     }
 
-    //}
-    //}
-
     fn generate_modrm_byte(&self, f: &mut Formatter, modrm_style: ModRmStyle) {
         let operands = self.operands_by_kind();
         let bytes_at_end = match operands.as_slice() {
@@ -499,6 +496,15 @@ impl dsl::Rex {
 }
 
 impl dsl::Vex {
+    // `buf.put1(...);`
+    fn generate_opcode(&self, f: &mut Formatter) {
+        f.empty_line();
+        f.comment("Emit opcode.");
+        fmtln!(f, "buf.put1(0x{:x});", self.opcode);
+    }
+}
+
+impl dsl::Evex {
     // `buf.put1(...);`
     fn generate_opcode(&self, f: &mut Formatter) {
         f.empty_line();
