@@ -56,7 +56,6 @@ pub fn evex(length: EvexLength) -> Evex {
         opcode: u8::MAX,
         modrm: None,
         imm: Imm::None,
-        b: false,
     }
 }
 
@@ -1223,16 +1222,6 @@ impl fmt::Display for EvexLength {
     }
 }
 
-/// Defines the EVEX masking behavior; masking support is described in section 2.6.4 of the Intel
-/// Software Development Manual, volume 2A.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct EvexMasking {
-    /// The mask register to use (1-7 for k1-k7)
-    k_reg: u8,
-    /// Whether masked-off elements are zeroed (true) or merged (false)
-    zeroing: bool,
-}
-
 pub struct Evex {
     /// The length of the operand (e.g., 128-bit, 256-bit, or 512-bit).
     pub length: EvexLength,
@@ -1251,8 +1240,6 @@ pub struct Evex {
     pub modrm: Option<ModRmKind>,
     /// See [`Rex.imm`](Rex.imm).
     pub imm: Imm,
-    /// Embedded broadcast
-    pub b: bool,
 }
 
 impl Evex {
@@ -1356,12 +1343,6 @@ impl Evex {
             modrm: Some(ModRmKind::Reg),
             ..self
         }
-    }
-
-    /// Set the `Evex.b` bit.
-    #[must_use]
-    pub fn bcst(self) -> Self {
-        Self { b: true, ..self }
     }
 
     fn validate(&self, _operands: &[Operand]) {
