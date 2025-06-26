@@ -56,11 +56,7 @@ pub fn evex(length: EvexLength) -> Evex {
         opcode: u8::MAX,
         modrm: None,
         imm: Imm::None,
-        //is4: false,
         b: false,
-        // z: EvexZ::Merging,
-        // k: None,
-        masking: None,
     }
 }
 
@@ -1237,40 +1233,6 @@ pub struct EvexMasking {
     zeroing: bool,
 }
 
-impl EvexMasking {
-    /// Create a new masking with the specified k register (1-7) and merging behavior
-    pub fn new(k_reg: u8) -> Self {
-        assert!(
-            k_reg >= 1 && k_reg <= 7,
-            "k register must be between 1 and 7"
-        );
-        Self {
-            k_reg,
-            zeroing: false,
-        }
-    }
-
-    /// Set zeroing behavior
-    pub fn set_zeroing(mut self) -> Self {
-        self.zeroing = true;
-        self
-    }
-
-    /// Set opmask register to use (1-7)
-    pub fn set_k_reg(mut self, k_reg: u8) -> Self {
-        self.k_reg = k_reg;
-        self
-    }
-
-    pub fn k_reg(&self) -> u8 {
-        self.k_reg
-    }
-
-    pub fn zeroing(&self) -> bool {
-        self.zeroing
-    }
-}
-
 pub struct Evex {
     /// The length of the operand (e.g., 128-bit, 256-bit, or 512-bit).
     pub length: EvexLength,
@@ -1291,8 +1253,6 @@ pub struct Evex {
     pub imm: Imm,
     /// Embedded broadcast
     pub b: bool,
-    /// Optional masking configuration
-    pub masking: Option<EvexMasking>,
 }
 
 impl Evex {
@@ -1402,26 +1362,6 @@ impl Evex {
     #[must_use]
     pub fn bcst(self) -> Self {
         Self { b: true, ..self }
-    }
-
-    /// Apply masking with the specified k register (1-7)
-    pub fn k(mut self, reg_num: u8) -> Self {
-        assert!(
-            reg_num >= 1 && reg_num <= 7,
-            "k register must be between 1 and 7"
-        );
-        self.masking = Some(EvexMasking::new(reg_num));
-        self
-    }
-
-    /// Set zeroing behavior for masked operations
-    pub fn z(mut self) -> Self {
-        if let Some(masking) = self.masking.as_mut() {
-            *masking = masking.set_zeroing();
-        } else {
-            //panic!("z() can only be used after setting a k-register");
-        }
-        self
     }
 
     fn validate(&self, _operands: &[Operand]) {
