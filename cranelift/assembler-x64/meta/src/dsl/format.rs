@@ -197,16 +197,6 @@ impl Format {
     pub fn zeroing(&self) -> bool {
         self.operands.iter().any(|op| op.zeroing)
     }
-
-    /// Returns true if broadcast is used
-    pub fn broadcast(&self) -> bool {
-        self.operands.iter().any(|op| op.broadcast)
-    }
-
-    /// Returns operand location if broadcast is used
-    pub fn broadcast_operand(&self) -> Option<&Operand> {
-        self.operands.iter().find(|op| op.broadcast)
-    }
 }
 
 impl core::fmt::Display for Format {
@@ -262,8 +252,6 @@ pub struct Operand {
     pub mask_reg: Option<u8>,
     /// EVEX zeroing-masking flag (z)
     pub zeroing: bool,
-    /// Broadcast attribute for memory location
-    pub broadcast: bool,
 }
 
 impl Operand {
@@ -275,11 +263,6 @@ impl Operand {
 
     pub fn z(mut self) -> Self {
         self.zeroing = true;
-        self
-    }
-
-    pub fn bcst(mut self) -> Self {
-        self.broadcast = true;
         self
     }
 }
@@ -294,7 +277,6 @@ impl core::fmt::Display for Operand {
             implicit,
             mask_reg,
             zeroing,
-            broadcast,
         } = self;
         write!(f, "{location}")?;
         let mut flags = vec![];
@@ -316,9 +298,6 @@ impl core::fmt::Display for Operand {
         if *zeroing {
             flags.push("z".to_owned());
         }
-        if *broadcast {
-            flags.push("bcst".to_owned());
-        }
         if !flags.is_empty() {
             write!(f, "[{}]", flags.join(","))?;
         }
@@ -334,7 +313,6 @@ impl From<Location> for Operand {
         let implicit = false;
         let mask_reg = None;
         let zeroing = false;
-        let broadcast = false;
         Self {
             location,
             mutability,
@@ -343,7 +321,6 @@ impl From<Location> for Operand {
             implicit,
             mask_reg,
             zeroing,
-            broadcast,
         }
     }
 }

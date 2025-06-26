@@ -77,11 +77,6 @@ impl dsl::Format {
                         }
                     }
                 }
-                if let Some(broadcast_op) = self.broadcast_operand() {
-                    if o == broadcast_op {
-                        formatted_operand.insert_str(0, &format!("{{{{{{bcst}}}}}}, "));
-                    }
-                }
                 formatted_operand
             })
             .collect();
@@ -346,8 +341,6 @@ impl dsl::Format {
         fmtln!(f, "let pp = {:#04b};", evex.pp.map_or(0b00, |pp| pp.bits()));
         fmtln!(f, "let mmmmm = {:#07b};", evex.mmmmm.unwrap().bits());
         fmtln!(f, "let w = {};", evex.w.as_bool());
-        // fmtln!(f, "let b = {};", evex.b);
-        fmtln!(f, "let b = {};", self.broadcast());
 
         // let bits = if let Some(masking) = &evex.masking {
         let bits = if let Some(aaa_bit) = self.mask_register() {
@@ -356,9 +349,9 @@ impl dsl::Format {
             // fmtln!(f, "let zeroing = {};", masking.zeroing());
             fmtln!(f, "let zeroing = {};", self.zeroing());
             //format!("ll, pp, mmmmm, w, b, Some((k_reg, zeroing))")
-            format!("ll, pp, mmmmm, w, b, Some((k_reg, zeroing))")
+            format!("ll, pp, mmmmm, w, false, Some((k_reg, zeroing))")
         } else {
-            format!("ll, pp, mmmmm, w, b, None")
+            format!("ll, pp, mmmmm, w, false, None")
         };
 
         let style = match self.operands_by_kind().as_slice() {

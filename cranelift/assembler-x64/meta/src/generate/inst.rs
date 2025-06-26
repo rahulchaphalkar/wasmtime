@@ -311,35 +311,6 @@ impl dsl::Inst {
             let to_string = location.generate_to_string(op.extension);
             fmtln!(f, "let {location} = {to_string};");
         }
-        //----bcst
-        if inst.format.broadcast() {
-        if let Some(op) = inst.format.uses_memory() {
-            use dsl::OperandKind::*;
-            f.comment("Emit broadcast attribute");
-            match op.kind() {
-                Mem(_) => {
-                    // f.add_block(
-                    //     &format!("if let Some(trap_code) = self.{op}.trap_code()"),
-                    //     |f| {
-                    //         fmtln!(f, "buf.add_trap(trap_code);");
-                    //     },
-                    // );
-                }
-                RegMem(_) => {
-                    let ty = op.reg_class().unwrap();
-                    f.add_block(&format!("let bcst = if let {ty}Mem::Mem({op}) = &self.{op}"), |f| {
-                        fmtln!(f, "\"\"");
-                    });
-                    f.add_block(&format!("else"), |f| {
-                        fmtln!(f, "\"rn-sae\"");
-                    });
-                    fmtln!(f, ";");
-                }
-                _ => unreachable!(),
-            }
-        }
-    }
-        //----
         let ordered_ops = inst.format.generate_att_evex_style_operands();
         let mut implicit_ops = inst.format.generate_implicit_operands();
         if inst.has_trap {
