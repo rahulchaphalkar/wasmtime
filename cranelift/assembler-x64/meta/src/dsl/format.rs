@@ -13,6 +13,8 @@
 //! assert_eq!(f.to_string(), "rm(r32[rw], rm32)")
 //! ```
 
+use crate::dsl;
+
 /// An abbreviated constructor for an instruction "format."
 ///
 /// These model what the reference manual calls "instruction operand encodings,"
@@ -178,6 +180,33 @@ impl Format {
     pub fn uses_eflags(&self) -> bool {
         self.eflags != Eflags::None
     }
+
+    /// Returns the mask register if any operand uses masking
+    pub fn mask_register(&self) -> Option<u8> {
+        self.operands.iter()
+            .filter_map(|op| op.mask_reg)
+            .next()
+    }
+
+    /// Return the operand that uses a mask register
+    pub fn mask_register_operand(&self) -> Option<&Operand> {
+        self.operands.iter().find(|op| op.mask_reg.is_some())
+    }
+
+    /// Returns true if zeroing is used
+    pub fn zeroing(&self) -> bool {
+        self.operands.iter().any(|op| op.zeroing)
+    }
+
+    /// Returns true if broadcast is used
+    pub fn broadcast(&self) -> bool {
+        self.operands.iter().any(|op| op.broadcast)
+    }
+
+    /// Returns operand location if broadcast is used
+    pub fn broadcast_operand(&self) -> Option<&Operand> {
+        self.operands.iter().find(|op| op.broadcast)
+    }
 }
 
 impl core::fmt::Display for Format {
@@ -214,7 +243,7 @@ impl core::fmt::Display for Format {
 /// assert_eq!(sxq(imm32).to_string(), "imm32[sxq]");
 /// assert_eq!(align(xmm_m128).to_string(), "xmm_m128[align]");
 /// ```
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Operand {
     /// The location of the data: memory, register, immediate.
     pub location: Location,
@@ -229,6 +258,30 @@ pub struct Operand {
     /// Some register operands are implicit: that is, they do not appear in the
     /// disassembled output even though they are used in the instruction.
     pub implicit: bool,
+    /// EVEX opmask register (k1-k7)
+    pub mask_reg: Option<u8>,
+    /// EVEX zeroing-masking flag (z)
+    pub zeroing: bool,
+    /// Broadcast attribute for memory location
+    pub broadcast: bool,
+}
+
+impl Operand {
+    pub fn k(mut self, reg: u8) -> Self {
+        assert!(reg >= 1 && reg <= 7, "Mask register must be k1-k7");
+        self.mask_reg = Some(reg);
+        self
+    }
+
+    pub fn z(mut self) -> Self {
+        self.zeroing = true;
+        self
+    }
+
+    pub fn bcst(mut self) -> Self {
+        self.broadcast = true;
+        self
+    }
 }
 
 impl core::fmt::Display for Operand {
@@ -239,6 +292,9 @@ impl core::fmt::Display for Operand {
             extension,
             align,
             implicit,
+            mask_reg,
+            zeroing,
+            broadcast,
         } = self;
         write!(f, "{location}")?;
         let mut flags = vec![];
@@ -254,6 +310,15 @@ impl core::fmt::Display for Operand {
         if *implicit {
             flags.push("implicit".to_owned());
         }
+        if let Some(mask_reg) = mask_reg {
+            write!(f, "[k{mask_reg}]")?;
+        }
+        if *zeroing {
+            flags.push("z".to_owned());
+        }
+        if *broadcast {
+            flags.push("bcst".to_owned());
+        }
         if !flags.is_empty() {
             write!(f, "[{}]", flags.join(","))?;
         }
@@ -267,12 +332,18 @@ impl From<Location> for Operand {
         let extension = Extension::default();
         let align = false;
         let implicit = false;
+        let mask_reg = None;
+        let zeroing = false;
+        let broadcast = false;
         Self {
             location,
             mutability,
             extension,
             align,
             implicit,
+            mask_reg,
+            zeroing,
+            broadcast,
         }
     }
 }
@@ -293,7 +364,7 @@ impl core::fmt::Display for RegClass {
 }
 
 /// An operand location, as expressed in Intel's _Instruction Set Reference_.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 #[allow(non_camel_case_types, reason = "makes DSL definitions easier to read")]
 pub enum Location {
     // Fixed registers.

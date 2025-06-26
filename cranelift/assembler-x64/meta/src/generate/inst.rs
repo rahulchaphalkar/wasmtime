@@ -1,5 +1,5 @@
 use super::{Formatter, fmtln, generate_derive, generate_derive_arbitrary_bounds};
-use crate::dsl;
+use crate::{dsl, generate::inst};
 
 impl dsl::Inst {
     /// `struct <inst> { <op>: Reg, <op>: Reg, ... }`
@@ -66,6 +66,8 @@ impl dsl::Inst {
             self.generate_visit_function(f);
             f.empty_line();
             self.generate_features_function(f);
+            f.empty_line();
+            self.generate_opmask_function(f);
         });
     }
 
@@ -112,6 +114,20 @@ impl dsl::Inst {
                 }
             },
         );
+    }
+
+    pub fn generate_opmask_function(&self, f: &mut Formatter) {
+
+    // f.add_block(
+    //     &format!("pub fn opmask_register(&self) -> Option<u8>"),
+    //     |f| {
+    //         if let dsl::Encoding::Evex(_) = self.encoding {
+    //             fmtln!(f, "Some(self.k_reg)");
+    //         } else {
+    //             fmtln!(f, "None");
+    //         }
+    //     },
+    // );
     }
 
     /// `fn encode(&self, ...) { ... }`
@@ -263,6 +279,10 @@ impl dsl::Inst {
                             fmtln!(f, "f.write_str(&name)");
                             return;
                         }
+                        if let dsl::Encoding::Evex(_) = self.encoding {     
+                            Self::display_evex(f, &self,);
+                            return;
+                        }
                         for op in self.format.operands.iter() {
                             let location = op.location;
                             let to_string = location.generate_to_string(op.extension);
@@ -284,6 +304,55 @@ impl dsl::Inst {
             },
         );
     }
+
+    fn display_evex(f: &mut Formatter, inst: &dsl::Inst) {
+        for op in inst.format.operands.iter() {
+            let location = op.location;
+            let to_string = location.generate_to_string(op.extension);
+            fmtln!(f, "let {location} = {to_string};");
+        }
+        //----bcst
+        if inst.format.broadcast() {
+        if let Some(op) = inst.format.uses_memory() {
+            use dsl::OperandKind::*;
+            f.comment("Emit broadcast attribute");
+            match op.kind() {
+                Mem(_) => {
+                    // f.add_block(
+                    //     &format!("if let Some(trap_code) = self.{op}.trap_code()"),
+                    //     |f| {
+                    //         fmtln!(f, "buf.add_trap(trap_code);");
+                    //     },
+                    // );
+                }
+                RegMem(_) => {
+                    let ty = op.reg_class().unwrap();
+                    f.add_block(&format!("let bcst = if let {ty}Mem::Mem({op}) = &self.{op}"), |f| {
+                        fmtln!(f, "\"\"");
+                    });
+                    f.add_block(&format!("else"), |f| {
+                        fmtln!(f, "\"rn-sae\"");
+                    });
+                    fmtln!(f, ";");
+                }
+                _ => unreachable!(),
+            }
+        }
+    }
+        //----
+        let ordered_ops = inst.format.generate_att_evex_style_operands();
+        let mut implicit_ops = inst.format.generate_implicit_operands();
+        if inst.has_trap {
+                            fmtln!(f, "let trap = self.trap;");
+                            if implicit_ops.is_empty() {
+                                implicit_ops.push_str(" ;; {trap}");
+                            } else {
+                                implicit_ops.push_str(", {trap}");
+                            }
+                        }
+                        fmtln!(f, "write!(f, \"{{name}} {ordered_ops}{implicit_ops}\")");
+    }
+
     /// `impl From<struct> for Inst { ... }`
     pub fn generate_from_impl(&self, f: &mut Formatter) {
         let struct_name_r = self.struct_name_with_generic();

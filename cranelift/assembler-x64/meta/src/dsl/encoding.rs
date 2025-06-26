@@ -1256,6 +1256,12 @@ impl EvexMasking {
         self
     }
 
+    /// Set opmask register to use (1-7)
+    pub fn set_k_reg(mut self, k_reg: u8) -> Self {
+        self.k_reg = k_reg;
+        self
+    }
+
     pub fn k_reg(&self) -> u8 {
         self.k_reg
     }
@@ -1283,8 +1289,6 @@ pub struct Evex {
     pub modrm: Option<ModRmKind>,
     /// See [`Rex.imm`](Rex.imm).
     pub imm: Imm,
-    /// See [`Vex::is4`]
-    // pub is4: bool,
     /// Embedded broadcast
     pub b: bool,
     /// Optional masking configuration
@@ -1415,7 +1419,7 @@ impl Evex {
         if let Some(masking) = self.masking.as_mut() {
             *masking = masking.set_zeroing();
         } else {
-            panic!("z() can only be used after setting a k-register");
+            //panic!("z() can only be used after setting a k-register");
         }
         self
     }

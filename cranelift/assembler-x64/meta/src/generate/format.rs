@@ -61,6 +61,34 @@ impl dsl::Format {
     }
 
     #[must_use]
+    pub(crate) fn generate_att_evex_style_operands(&self) -> String {
+        let ordered_ops: Vec<_> = self
+            .operands
+            .iter()
+            .filter(|o| !o.implicit)
+            .rev()
+            .map(|o| {
+                let mut formatted_operand = format!("{{{}}}", o.location);
+                if let Some(mask_op) = self.mask_register_operand() {
+                    if o == mask_op {
+                    formatted_operand.push_str(&format!(" {{{{%k{}}}}}", self.mask_register().expect("mask register not present")));
+                        if self.zeroing() {
+                            formatted_operand.push_str(" {{z}}");
+                        }
+                    }
+                }
+                if let Some(broadcast_op) = self.broadcast_operand() {
+                    if o == broadcast_op {
+                        formatted_operand.insert_str(0, &format!("{{{{{{bcst}}}}}}, "));
+                    }
+                }
+                formatted_operand
+            })
+            .collect();
+        ordered_ops.join(", ")
+    }
+
+    #[must_use]
     pub(crate) fn generate_implicit_operands(&self) -> String {
         let ops: Vec<_> = self
             .operands
@@ -318,15 +346,18 @@ impl dsl::Format {
         fmtln!(f, "let pp = {:#04b};", evex.pp.map_or(0b00, |pp| pp.bits()));
         fmtln!(f, "let mmmmm = {:#07b};", evex.mmmmm.unwrap().bits());
         fmtln!(f, "let w = {};", evex.w.as_bool());
-        fmtln!(f, "let b = {};", evex.b);
+        // fmtln!(f, "let b = {};", evex.b);
+        fmtln!(f, "let b = {};", self.broadcast());
 
-        let bits = if let Some(masking) = &evex.masking {
-            fmtln!(f, "let k_reg = {};", masking.k_reg());
-            fmtln!(f, "let zeroing = {};", masking.zeroing());
-            //let bits = "ll, pp, mmmmm, w, b, Some((k_reg, zeroing))";
+        // let bits = if let Some(masking) = &evex.masking {
+        let bits = if let Some(aaa_bit) = self.mask_register() {
+            //fmtln!(f, "let k_reg = {};", masking.k_reg());
+            fmtln!(f, "let k_reg = {};", aaa_bit);
+            // fmtln!(f, "let zeroing = {};", masking.zeroing());
+            fmtln!(f, "let zeroing = {};", self.zeroing());
+            //format!("ll, pp, mmmmm, w, b, Some((k_reg, zeroing))")
             format!("ll, pp, mmmmm, w, b, Some((k_reg, zeroing))")
         } else {
-            //let bits = "ll, pp, mmmmm, w, b, None";
             format!("ll, pp, mmmmm, w, b, None")
         };
 
