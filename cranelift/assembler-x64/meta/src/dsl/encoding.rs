@@ -1231,10 +1231,7 @@ pub struct Evex {
     pub mmmmm: Option<VexEscape>,
     /// The `W` bit.
     pub w: VexW,
-    /// VEX-encoded instructions have a single-byte opcode. Other prefix-related
-    /// bytes (see [`Opcodes`]) are encoded in the VEX prefixes (see `pp`,
-    /// `mmmmmm`). From the reference manual: "One (and only one) opcode byte
-    /// follows the 2 or 3 byte VEX."
+    /// EVEX-encoded instructions opcode byte"
     pub opcode: u8,
     /// See [`Rex.modrm`](Rex.modrm).
     pub modrm: Option<ModRmKind>,

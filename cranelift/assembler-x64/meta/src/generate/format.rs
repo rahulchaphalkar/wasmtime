@@ -71,7 +71,10 @@ impl dsl::Format {
                 let mut formatted_operand = format!("{{{}}}", o.location);
                 if let Some(mask_op) = self.mask_register_operand() {
                     if o == mask_op {
-                    formatted_operand.push_str(&format!(" {{{{%k{}}}}}", self.mask_register().expect("mask register not present")));
+                        formatted_operand.push_str(&format!(
+                            " {{{{%k{}}}}}",
+                            self.mask_register().expect("mask register not present")
+                        ));
                         if self.zeroing() {
                             formatted_operand.push_str(" {{z}}");
                         }
@@ -342,21 +345,18 @@ impl dsl::Format {
         fmtln!(f, "let mmmmm = {:#07b};", evex.mmmmm.unwrap().bits());
         fmtln!(f, "let w = {};", evex.w.as_bool());
 
-        // let bits = if let Some(masking) = &evex.masking {
         let bits = if let Some(aaa_bit) = self.mask_register() {
-            //fmtln!(f, "let k_reg = {};", masking.k_reg());
             fmtln!(f, "let k_reg = {};", aaa_bit);
-            // fmtln!(f, "let zeroing = {};", masking.zeroing());
             fmtln!(f, "let zeroing = {};", self.zeroing());
-            //format!("ll, pp, mmmmm, w, b, Some((k_reg, zeroing))")
-            format!("ll, pp, mmmmm, w, false, Some((k_reg, zeroing))")
+            // Broadcast bit set to false till implemented.
+            fmtln!(f, "let b = false;");
+            format!("ll, pp, mmmmm, w, b, Some((k_reg, zeroing))")
         } else {
-            format!("ll, pp, mmmmm, w, false, None")
+            format!("ll, pp, mmmmm, w, b, None")
         };
 
         let style = match self.operands_by_kind().as_slice() {
             [Reg(reg), Reg(vvvv), Reg(rm)] => {
-                //assert!(!vex.is4);
                 fmtln!(f, "let reg = self.{reg}.enc();");
                 fmtln!(f, "let vvvv = self.{vvvv}.enc();");
                 fmtln!(f, "let rm = self.{rm}.encode_bx_regs();");
@@ -370,7 +370,6 @@ impl dsl::Format {
             | [Reg(reg), Reg(vvvv), Mem(rm)]
             | [Reg(reg), Reg(vvvv), RegMem(rm), Imm(_) | FixedReg(_)]
             | [Reg(reg), RegMem(rm), Reg(vvvv)] => {
-                //assert!(!vex.is4);
                 fmtln!(f, "let reg = self.{reg}.enc();");
                 fmtln!(f, "let vvvv = self.{vvvv}.enc();");
                 fmtln!(f, "let rm = self.{rm}.encode_bx_regs();");
@@ -381,7 +380,6 @@ impl dsl::Format {
                 }
             }
             [Reg(reg), Reg(vvvv), RegMem(rm), Reg(is4)] => {
-                //assert!(vex.is4);
                 fmtln!(f, "let reg = self.{reg}.enc();");
                 fmtln!(f, "let vvvv = self.{vvvv}.enc();");
                 fmtln!(f, "let rm = self.{rm}.encode_bx_regs();");
@@ -396,7 +394,6 @@ impl dsl::Format {
             | [RegMem(rm), Reg(reg_or_vvvv)]
             | [Reg(reg_or_vvvv), RegMem(rm), Imm(_)] => match evex.unwrap_digit() {
                 Some(digit) => {
-                    //assert!(!vex.is4);
                     let vvvv = reg_or_vvvv;
                     fmtln!(f, "let reg = {digit:#x};");
                     fmtln!(f, "let vvvv = self.{vvvv}.enc();");
@@ -408,7 +405,6 @@ impl dsl::Format {
                     }
                 }
                 None => {
-                    //assert!(!vex.is4);
                     let reg = reg_or_vvvv;
                     fmtln!(f, "let reg = self.{reg}.enc();");
                     fmtln!(f, "let vvvv = {};", "0b0");
@@ -421,7 +417,6 @@ impl dsl::Format {
                 }
             },
             [Reg(reg), Reg(rm)] => {
-                //assert!(!vex.is4);
                 fmtln!(f, "let reg = self.{reg}.enc();");
                 fmtln!(f, "let vvvv = 0;");
                 fmtln!(f, "let rm = (Some(self.{rm}.enc()), None);");

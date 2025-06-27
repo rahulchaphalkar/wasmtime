@@ -13,8 +13,6 @@
 //! assert_eq!(f.to_string(), "rm(r32[rw], rm32)")
 //! ```
 
-use crate::dsl;
-
 /// An abbreviated constructor for an instruction "format."
 ///
 /// These model what the reference manual calls "instruction operand encodings,"
@@ -183,9 +181,7 @@ impl Format {
 
     /// Returns the mask register if any operand uses masking
     pub fn mask_register(&self) -> Option<u8> {
-        self.operands.iter()
-            .filter_map(|op| op.mask_reg)
-            .next()
+        self.operands.iter().filter_map(|op| op.mask_reg).next()
     }
 
     /// Return the operand that uses a mask register

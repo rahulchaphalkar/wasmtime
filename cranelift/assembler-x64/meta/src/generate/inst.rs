@@ -1,5 +1,5 @@
 use super::{Formatter, fmtln, generate_derive, generate_derive_arbitrary_bounds};
-use crate::{dsl, generate::inst};
+use crate::dsl;
 
 impl dsl::Inst {
     /// `struct <inst> { <op>: Reg, <op>: Reg, ... }`
@@ -66,8 +66,6 @@ impl dsl::Inst {
             self.generate_visit_function(f);
             f.empty_line();
             self.generate_features_function(f);
-            f.empty_line();
-            self.generate_opmask_function(f);
         });
     }
 
@@ -114,20 +112,6 @@ impl dsl::Inst {
                 }
             },
         );
-    }
-
-    pub fn generate_opmask_function(&self, f: &mut Formatter) {
-
-    // f.add_block(
-    //     &format!("pub fn opmask_register(&self) -> Option<u8>"),
-    //     |f| {
-    //         if let dsl::Encoding::Evex(_) = self.encoding {
-    //             fmtln!(f, "Some(self.k_reg)");
-    //         } else {
-    //             fmtln!(f, "None");
-    //         }
-    //     },
-    // );
     }
 
     /// `fn encode(&self, ...) { ... }`
@@ -279,8 +263,8 @@ impl dsl::Inst {
                             fmtln!(f, "f.write_str(&name)");
                             return;
                         }
-                        if let dsl::Encoding::Evex(_) = self.encoding {     
-                            Self::display_evex(f, &self,);
+                        if let dsl::Encoding::Evex(_) = self.encoding {
+                            Self::display_evex(f, &self);
                             return;
                         }
                         for op in self.format.operands.iter() {
@@ -314,14 +298,14 @@ impl dsl::Inst {
         let ordered_ops = inst.format.generate_att_evex_style_operands();
         let mut implicit_ops = inst.format.generate_implicit_operands();
         if inst.has_trap {
-                            fmtln!(f, "let trap = self.trap;");
-                            if implicit_ops.is_empty() {
-                                implicit_ops.push_str(" ;; {trap}");
-                            } else {
-                                implicit_ops.push_str(", {trap}");
-                            }
-                        }
-                        fmtln!(f, "write!(f, \"{{name}} {ordered_ops}{implicit_ops}\")");
+            fmtln!(f, "let trap = self.trap;");
+            if implicit_ops.is_empty() {
+                implicit_ops.push_str(" ;; {trap}");
+            } else {
+                implicit_ops.push_str(", {trap}");
+            }
+        }
+        fmtln!(f, "write!(f, \"{{name}} {ordered_ops}{implicit_ops}\")");
     }
 
     /// `impl From<struct> for Inst { ... }`

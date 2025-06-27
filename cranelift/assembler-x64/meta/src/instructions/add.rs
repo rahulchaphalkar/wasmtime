@@ -79,7 +79,6 @@ pub fn list() -> Vec<Inst> {
         inst("paddusw", fmt("A", [rw(xmm1), r(align(xmm_m128))]), rex([0x66, 0x0F, 0xDD]).r(), _64b | compat | sse2),
         inst("phaddw", fmt("A", [rw(xmm1), r(align(xmm_m128))]), rex([0x66, 0x0F, 0x38, 0x01]).r(), _64b | compat | ssse3),
         inst("phaddd", fmt("A", [rw(xmm1), r(align(xmm_m128))]), rex([0x66, 0x0F, 0x38, 0x02]).r(), _64b | compat | ssse3),
-        // Evex
         inst("vaddpd", fmt("C", [w(xmm1).k(1).z(), r(xmm2), r(xmm_m128)]), evex(EvexLength::L128).r().w1()._66()._0f().op(0x58), _64b | compat | avx10),
         // `LOCK`-prefixed xadd
         inst("lock_xaddb", fmt("MR", [rw(m8), rw(r8)]), rex([0xf0, 0x0f, 0xc0]).r(), _64b | compat).custom(Mnemonic | Visit),
