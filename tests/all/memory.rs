@@ -93,6 +93,10 @@ fn test_traps(store: &mut Store<()>, funcs: &[TestFunc], addr: u32, mem: &Memory
 #[wasmtime_test(wasm_features(simd))]
 #[cfg_attr(miri, ignore)]
 fn offsets_static_dynamic_oh_my(config: &mut Config) -> Result<()> {
+    if wasmtime_test_util::is_sde() {
+        println!("skipping `offsets_static_dynamic_oh_my` test; extremely slow under SDE");
+        return Ok(());
+    }
     const GB: u64 = 1 << 30;
     const MB: u64 = 1 << 20;
 
