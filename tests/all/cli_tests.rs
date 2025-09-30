@@ -1789,6 +1789,10 @@ mod test_programs {
 
     #[test]
     fn cli_large_env() -> Result<()> {
+        if wasmtime_test_util::is_sde() {
+            println!("> running under SDE which has process execution limitations: skipping test");
+            return Ok(());
+        }
         for wasm in [CLI_LARGE_ENV, CLI_LARGE_ENV_COMPONENT] {
             println!("run {wasm:?}");
             let mut cmd = get_wasmtime_command()?;
@@ -2274,6 +2278,10 @@ fn settings_command() -> Result<()> {
 #[cfg(target_arch = "x86_64")]
 #[test]
 fn profile_with_vtune() -> Result<()> {
+    if wasmtime_test_util::is_sde() {
+        println!("> running under SDE which doesn't support VTune profiling: skipping test");
+        return Ok(());
+    }
     if !is_vtune_available() {
         println!("> `vtune` is not available on the system path; skipping test");
         return Ok(());
