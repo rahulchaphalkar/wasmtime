@@ -710,6 +710,7 @@ jobs:
     - name: Setup Intel SDE
       uses: petarpetrovt/setup-sde@v3.0
       if: matrix.sde
+
     - name: Install qemu
       run: |
         set -ex
