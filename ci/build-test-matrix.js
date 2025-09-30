@@ -54,6 +54,9 @@ const FAST_MATRIX = [
 //   QEMU and installing cross compilers to execute a cross-compiled test suite
 //   on CI.
 //
+// * `sde` - if `true`, indicates this test should use Intel SDE for instruction
+//   emulation. SDE will be set up and configured as the test runner.
+//
 // * `rust` - the Rust version to install, and if unset this'll be set to
 //   `default`
 const FULL_MATRIX = [
@@ -77,6 +80,13 @@ const FULL_MATRIX = [
     "filter": "asan",
     "rust": "wasmtime-ci-pinned-nightly",
     "target": "x86_64-unknown-linux-gnu",
+  },
+  {
+    "os": ubuntu,
+    "name": "Test Linux x86_64 with SDE",
+    "filter": "sde",
+    "isa": "x64",
+    "sde": true,
   },
   {
     "os": macos,
