@@ -149,6 +149,10 @@ macro_rules! skip_if_mpk_unavailable {
             println!("> mpk is not supported: ignoring test");
             return;
         }
+        if wasmtime_test_util::is_sde() {
+            println!("> running under SDE which doesn't support MPK: ignoring test");
+            return;
+        }
     };
 }
 /// Necessary for inter-module access.
@@ -169,6 +173,10 @@ mod tests {
 
     #[test]
     fn check_initialized_keys() {
+        if wasmtime_test_util::is_sde() {
+            // MPK instructions (RDPKRU/WRPKRU) are not supported under SDE
+            return;
+        }
         if is_supported() {
             assert!(!keys(15).is_empty())
         }
@@ -176,6 +184,10 @@ mod tests {
 
     #[test]
     fn check_invalid_mark() {
+        if wasmtime_test_util::is_sde() {
+            // MPK instructions (RDPKRU/WRPKRU) are not supported under SDE
+            return;
+        }
         skip_if_mpk_unavailable!();
         let pkey = keys(15)[0];
         let unaligned_region = unsafe {
@@ -193,6 +205,10 @@ mod tests {
 
     #[test]
     fn check_masking() {
+        if wasmtime_test_util::is_sde() {
+            // MPK instructions (RDPKRU/WRPKRU) are not supported under SDE
+            return;
+        }
         skip_if_mpk_unavailable!();
         let original = pkru::read();
 
