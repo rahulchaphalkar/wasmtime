@@ -37,7 +37,9 @@ pub async fn async_post_return_caller() -> Result<()> {
 #[tokio::test]
 pub async fn async_sleep_post_return_caller() -> Result<()> {
     if wasmtime_test_util::is_sde() {
-        println!("skipping `async_sleep_post_return_caller` test; async timing operations are unreliable under SDE");
+        println!(
+            "skipping `async_sleep_post_return_caller` test; async timing operations are unreliable under SDE"
+        );
         return Ok(());
     }
     test_sleep_post_return(&[
@@ -50,7 +52,9 @@ pub async fn async_sleep_post_return_caller() -> Result<()> {
 #[tokio::test]
 pub async fn async_sleep_post_return_callee() -> Result<()> {
     if wasmtime_test_util::is_sde() {
-        println!("skipping `async_sleep_post_return_callee` test; async timing operations are unreliable under SDE");
+        println!(
+            "skipping `async_sleep_post_return_callee` test; async timing operations are unreliable under SDE"
+        );
         return Ok(());
     }
     test_sleep_post_return(&[test_programs_artifacts::ASYNC_SLEEP_POST_RETURN_CALLEE_COMPONENT])

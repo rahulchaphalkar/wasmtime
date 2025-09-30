@@ -2223,7 +2223,9 @@ start a print 1234
     #[test]
     fn cli_p1_much_stdout() -> Result<()> {
         if wasmtime_test_util::is_sde() {
-            println!("skipping `cli_p1_much_stdout` test; I/O intensive operations are very slow under SDE");
+            println!(
+                "skipping `cli_p1_much_stdout` test; I/O intensive operations are very slow under SDE"
+            );
             return Ok(());
         }
         run_much_stdout(CLI_P1_MUCH_STDOUT_COMPONENT, &[])
@@ -2232,7 +2234,9 @@ start a print 1234
     #[test]
     fn cli_p2_much_stdout() -> Result<()> {
         if wasmtime_test_util::is_sde() {
-            println!("skipping `cli_p2_much_stdout` test; I/O intensive operations are very slow under SDE");
+            println!(
+                "skipping `cli_p2_much_stdout` test; I/O intensive operations are very slow under SDE"
+            );
             return Ok(());
         }
         run_much_stdout(CLI_P2_MUCH_STDOUT_COMPONENT, &[])
@@ -2242,7 +2246,9 @@ start a print 1234
     #[cfg_attr(not(feature = "component-model-async"), ignore)]
     fn cli_p3_much_stdout() -> Result<()> {
         if wasmtime_test_util::is_sde() {
-            println!("skipping `cli_p3_much_stdout` test; I/O intensive operations are very slow under SDE");
+            println!(
+                "skipping `cli_p3_much_stdout` test; I/O intensive operations are very slow under SDE"
+            );
             return Ok(());
         }
         run_much_stdout(

@@ -1685,7 +1685,9 @@ fn instantiate_table_init_expr_oom() -> Result<()> {
 #[cfg_attr(miri, ignore)]
 fn instantiate_global_init_oom() -> Result<()> {
     if wasmtime_test_util::is_sde() {
-        println!("skipping `instantiate_global_init_oom` test; memory allocation stress testing is extremely slow under SDE");
+        println!(
+            "skipping `instantiate_global_init_oom` test; memory allocation stress testing is extremely slow under SDE"
+        );
         return Ok(());
     }
     let mut config = Config::new();

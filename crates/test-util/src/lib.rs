@@ -22,9 +22,10 @@ pub fn cargo_test_runner() -> Option<String> {
 
 /// Returns true if tests are running under Intel SDE (Software Development Emulator)
 pub fn is_sde() -> bool {
-    std::env::var("WASMTIME_TEST_SDE").is_ok() ||
-        cargo_test_runner()
-            .map_or(false, |runner| runner.contains("sde64") || runner.contains("sde32"))
+    std::env::var("WASMTIME_TEST_SDE").is_ok()
+        || cargo_test_runner().map_or(false, |runner| {
+            runner.contains("sde64") || runner.contains("sde32")
+        })
 }
 
 pub fn command(bin: impl AsRef<Path>) -> Command {
