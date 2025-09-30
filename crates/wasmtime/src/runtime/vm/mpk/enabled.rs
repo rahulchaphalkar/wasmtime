@@ -149,8 +149,7 @@ macro_rules! skip_if_mpk_unavailable {
             println!("> mpk is not supported: ignoring test");
             return;
         }
-        if wasmtime_test_util::is_sde() {
-            println!("> running under SDE which doesn't support MPK: ignoring test");
+        if std::env::var("WASMTIME_TEST_NO_SDE").is_ok() {
             return;
         }
     };
@@ -173,8 +172,7 @@ mod tests {
 
     #[test]
     fn check_initialized_keys() {
-        if wasmtime_test_util::is_sde() {
-            // MPK instructions (RDPKRU/WRPKRU) are not supported under SDE
+        if std::env::var("WASMTIME_TEST_NO_SDE").is_ok() {
             return;
         }
         if is_supported() {
@@ -184,8 +182,7 @@ mod tests {
 
     #[test]
     fn check_invalid_mark() {
-        if wasmtime_test_util::is_sde() {
-            // MPK instructions (RDPKRU/WRPKRU) are not supported under SDE
+        if std::env::var("WASMTIME_TEST_NO_SDE").is_ok() {
             return;
         }
         skip_if_mpk_unavailable!();
@@ -205,8 +202,7 @@ mod tests {
 
     #[test]
     fn check_masking() {
-        if wasmtime_test_util::is_sde() {
-            // MPK instructions (RDPKRU/WRPKRU) are not supported under SDE
+        if std::env::var("WASMTIME_TEST_NO_SDE").is_ok() {
             return;
         }
         skip_if_mpk_unavailable!();

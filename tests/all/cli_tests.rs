@@ -1789,8 +1789,7 @@ mod test_programs {
 
     #[test]
     fn cli_large_env() -> Result<()> {
-        if wasmtime_test_util::is_sde() {
-            println!("> running under SDE which has process execution limitations: skipping test");
+        if std::env::var("WASMTIME_TEST_NO_SDE").is_ok() {
             return Ok(());
         }
         for wasm in [CLI_LARGE_ENV, CLI_LARGE_ENV_COMPONENT] {
@@ -2222,10 +2221,7 @@ start a print 1234
 
     #[test]
     fn cli_p1_much_stdout() -> Result<()> {
-        if wasmtime_test_util::is_sde() {
-            println!(
-                "skipping `cli_p1_much_stdout` test; I/O intensive operations are very slow under SDE"
-            );
+        if std::env::var("WASMTIME_TEST_NO_SDE").is_ok() {
             return Ok(());
         }
         run_much_stdout(CLI_P1_MUCH_STDOUT_COMPONENT, &[])
@@ -2233,10 +2229,7 @@ start a print 1234
 
     #[test]
     fn cli_p2_much_stdout() -> Result<()> {
-        if wasmtime_test_util::is_sde() {
-            println!(
-                "skipping `cli_p2_much_stdout` test; I/O intensive operations are very slow under SDE"
-            );
+        if std::env::var("WASMTIME_TEST_NO_SDE").is_ok() {
             return Ok(());
         }
         run_much_stdout(CLI_P2_MUCH_STDOUT_COMPONENT, &[])
@@ -2245,10 +2238,7 @@ start a print 1234
     #[test]
     #[cfg_attr(not(feature = "component-model-async"), ignore)]
     fn cli_p3_much_stdout() -> Result<()> {
-        if wasmtime_test_util::is_sde() {
-            println!(
-                "skipping `cli_p3_much_stdout` test; I/O intensive operations are very slow under SDE"
-            );
+        if std::env::var("WASMTIME_TEST_NO_SDE").is_ok() {
             return Ok(());
         }
         run_much_stdout(
@@ -2296,8 +2286,7 @@ fn settings_command() -> Result<()> {
 #[cfg(target_arch = "x86_64")]
 #[test]
 fn profile_with_vtune() -> Result<()> {
-    if wasmtime_test_util::is_sde() {
-        println!("> running under SDE which doesn't support VTune profiling: skipping test");
+    if std::env::var("WASMTIME_TEST_NO_SDE").is_ok() {
         return Ok(());
     }
     if !is_vtune_available() {

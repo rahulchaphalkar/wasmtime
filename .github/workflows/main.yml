@@ -760,6 +760,9 @@ jobs:
         # Enable environment variable to indicate SDE is being used
         echo WASMTIME_TEST_SDE=1 >> $GITHUB_ENV
         
+        # Generic variable for skipping tests that are problematic under SDE (performance, compatibility, etc.)
+        echo WASMTIME_TEST_NO_SDE=1 >> $GITHUB_ENV
+        
         # Similar to QEMU, reduce memory usage during SDE emulation
         echo WASMTIME_TEST_NO_HOG_MEMORY=1 >> $GITHUB_ENV
       if: matrix.sde

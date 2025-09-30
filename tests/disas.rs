@@ -69,12 +69,11 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
-    // SDE (Intel Software Development Emulator) can be useful for disassembly tests
-    // as it allows validation of specific instruction sets, but these tests can be
-    // slow under emulation. We continue with SDE but could add SDE-specific
-    // filtering here if needed.
-    if wasmtime_test_util::is_sde() {
-        eprintln!("Running disassembly tests under Intel SDE - this may be slow");
+    // Similarly, SDE (Intel Software Development Emulator) emulation makes these
+    // tests very slow without much benefit since they only exercise architecture-
+    // independent compilation code. Disable this test suite when SDE is enabled.
+    if std::env::var("WASMTIME_TEST_NO_SDE").is_ok() {
+        return Ok(());
     }
 
     let _ = env_logger::try_init();
