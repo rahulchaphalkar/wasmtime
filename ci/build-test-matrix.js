@@ -239,7 +239,16 @@ async function shard(configs) {
   for (const config of configs) {
     // If crates is specified, don't shard, just use the specified crates
     if (config.crates) {
-      sharded.push(config);
+        if (config.crates) {
+          sharded.push(Object.assign(
+            {},
+            config,
+            {
+              bucket: members
+                .map(c => c === config.crates ? `--package ${c}` : `--exclude ${c}`)
+                .join(" ")
+            }
+          ));
       continue;
     }
     for (const bucket of buckets) {
