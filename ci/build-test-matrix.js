@@ -237,6 +237,11 @@ async function shard(configs) {
   // created above.
   const sharded = [];
   for (const config of configs) {
+    // If crates is specified, don't shard, just use the specified crates
+    if (config.crates) {
+      sharded.push(config);
+      continue;
+    }
     for (const bucket of buckets) {
       sharded.push(Object.assign(
         {},
