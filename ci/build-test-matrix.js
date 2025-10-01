@@ -87,7 +87,7 @@ const FULL_MATRIX = [
     "filter": "sde",
     "isa": "x64",
     "sde": true,
-    "crates": "cranelift-tools",
+    "crates": "cranelift-filetests",
   },
   {
     "os": macos,
