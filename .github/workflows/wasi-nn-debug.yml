@@ -72,5 +72,6 @@ jobs:
       run: lscpu
 
     # Run the tests, serialized and unbuffered so the last line before a native
-    # crash names the exact failing test.
-    - run: cargo test -p wasmtime-wasi-nn --no-default-features --features ${{ matrix.feature }} -- --test-threads=1 --nocapture
+    # crash names the exact failing test. Filter by backend name so each job
+    # runs only its own backend's tests (default features compile them all in).
+    - run: cargo test -p wasmtime-wasi-nn --features ${{ matrix.feature }} -- ${{ matrix.feature == 'onnx-download' && 'onnx' || matrix.feature }} --test-threads=1 --nocapture

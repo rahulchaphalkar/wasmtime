@@ -1047,11 +1047,13 @@ jobs:
 
     # Run the tests!
     #
-    # Use `--no-default-features` so that each backend is tested in isolation:
-    # the default features (`openvino` + `winml`) would otherwise compile and
-    # run every backend's tests in every job, making it impossible to attribute
-    # a failure (e.g. a native crash) to a specific backend.
-    - run: cargo test -p wasmtime-wasi-nn --no-default-features --features ${{ matrix.feature }}
+    # Filter tests by backend name so each job runs only its own backend's
+    # tests. The default features (`openvino` + `winml`) compile every backend
+    # into the test binary, so without a filter the `openvino` job would also
+    # run the `winml` tests (and vice versa), making it impossible to attribute
+    # a failure (e.g. a native crash) to a specific backend. The `onnx-download`
+    # feature maps to the `onnx` test-name substring.
+    - run: cargo test -p wasmtime-wasi-nn --features ${{ matrix.feature }} -- ${{ matrix.feature == 'onnx-download' && 'onnx' || matrix.feature }}
 
   # Test `wasmtime-wasi-tls` in its own job, as not all of its providers are
   # compatible with all targets. The primary culprit is the OpenSSL dependency,
