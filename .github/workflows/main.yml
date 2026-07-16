@@ -1046,7 +1046,12 @@ jobs:
     - run: rustup target add wasm32-wasip1 wasm32-wasip2
 
     # Run the tests!
-    - run: cargo test -p wasmtime-wasi-nn --features ${{ matrix.feature }}
+    #
+    # Use `--no-default-features` so that each backend is tested in isolation:
+    # the default features (`openvino` + `winml`) would otherwise compile and
+    # run every backend's tests in every job, making it impossible to attribute
+    # a failure (e.g. a native crash) to a specific backend.
+    - run: cargo test -p wasmtime-wasi-nn --no-default-features --features ${{ matrix.feature }}
 
   # Test `wasmtime-wasi-tls` in its own job, as not all of its providers are
   # compatible with all targets. The primary culprit is the OpenSSL dependency,
