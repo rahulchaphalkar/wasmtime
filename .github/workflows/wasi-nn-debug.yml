@@ -1,0 +1,76 @@
+name: wasi-nn debug
+
+# TEMPORARY DEBUG WORKFLOW.
+#
+# Standalone, fast-feedback workflow to isolate a native crash
+# (`STATUS_ILLEGAL_INSTRUCTION` / `0xc000001d`) seen in the wasi-nn tests on
+# windows-2025. It mirrors the `test_wasi_nn` job from `main.yml` but:
+#   - runs on its own so unrelated CI jobs don't slow feedback down,
+#   - tests each backend in isolation via `--no-default-features`,
+#   - serializes tests (`--test-threads=1`) and shows output (`--nocapture`) so
+#     the last line before a crash names the exact failing test,
+#   - sets `ONEDNN_VERBOSE=1` so OpenVINO's oneDNN logs the ISA/kernel it
+#     dispatched right before any fault.
+#
+# Delete this file once the crash is diagnosed.
+on:
+  push:
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test_wasi_nn:
+    strategy:
+      fail-fast: false
+      matrix:
+        feature: ["openvino", "onnx-download"]
+        os: ["ubuntu-24.04", "windows-2025"]
+        include:
+          - os: windows-2025
+            feature: winml
+    name: wasi-nn (${{ matrix.feature }}, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    env:
+      ONEDNN_VERBOSE: 1
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        submodules: true
+    - uses: ./.github/actions/install-rust
+
+    # Install OpenVINO
+    - uses: abrown/install-openvino-action@v10
+      if: runner.arch == 'X64'
+
+    # Install WinML for testing wasi-nn WinML backend. WinML is only available
+    # on Windows clients and Windows Server with desktop experience enabled.
+    # GitHub Actions Window Server image doesn't have desktop experience
+    # enabled, so we download the standalone library from ONNX Runtime project.
+    - uses: nuget/setup-nuget@v2
+      if: (runner.os == 'Windows') && (matrix.feature == 'winml')
+    - run: nuget install Microsoft.AI.MachineLearning
+      if: (runner.os == 'Windows') && (matrix.feature == 'winml')
+
+    # Install Rust targets.
+    - run: rustup target add wasm32-wasip1 wasm32-wasip2
+
+    # Log the CPU the runner landed on; the crash is suspected to depend on the
+    # (virtualized) CPU's advertised ISA.
+    - name: Log runner CPU (Windows)
+      if: runner.os == 'Windows'
+      run: Get-CimInstance Win32_Processor | Format-List Name,Description,NumberOfCores,NumberOfLogicalProcessors
+      shell: pwsh
+    - name: Log runner CPU (Linux)
+      if: runner.os == 'Linux'
+      run: lscpu
+
+    # Run the tests, serialized and unbuffered so the last line before a native
+    # crash names the exact failing test.
+    - run: cargo test -p wasmtime-wasi-nn --no-default-features --features ${{ matrix.feature }} -- --test-threads=1 --nocapture
