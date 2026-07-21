@@ -35,10 +35,19 @@ jobs:
         include:
           - os: windows-2025
             feature: winml
-    name: wasi-nn (${{ matrix.feature }}, ${{ matrix.os }})
+          # A/B experiment: same windows openvino test, but cap oneDNN's ISA at
+          # AVX2 so it can't JIT the bf16/AVX-512/AMX kernels that fault. If this
+          # lane passes while the uncapped openvino lane crashes on the same CPU
+          # class, the crash is confirmed as oneDNN bf16 misdispatch (and this is
+          # the fix). ONEDNN_VERBOSE below lets us verify the cap was honored.
+          - os: windows-2025
+            feature: openvino
+            onednn_max_isa: AVX2
+    name: wasi-nn (${{ matrix.feature }}, ${{ matrix.os }}${{ matrix.onednn_max_isa && format(', isa={0}', matrix.onednn_max_isa) || '' }})
     runs-on: ${{ matrix.os }}
     env:
       ONEDNN_VERBOSE: 1
+      ONEDNN_MAX_CPU_ISA: ${{ matrix.onednn_max_isa }}
     steps:
     - uses: actions/checkout@v6
       with:
