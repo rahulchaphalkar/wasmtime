@@ -2,19 +2,15 @@ name: wasi-nn debug
 
 # TEMPORARY DEBUG WORKFLOW.
 #
-# Standalone, fast-feedback workflow to REPRODUCE a native crash
+# Standalone, fast-feedback workflow to isolate a native crash
 # (`STATUS_ILLEGAL_INSTRUCTION` / `0xc000001d`) seen in the wasi-nn tests on
-# windows-2025. It mirrors the `test_wasi_nn` job from `main.yml` exactly (no
-# backend isolation: default features mean openvino + winml run in every job),
-# but adds diagnostics so a repro is captured with context:
+# windows-2025. It mirrors the `test_wasi_nn` job from `main.yml` but:
 #   - runs on its own so unrelated CI jobs don't slow feedback down,
+#   - tests each backend in isolation via `--no-default-features`,
 #   - serializes tests (`--test-threads=1`) and shows output (`--nocapture`) so
 #     the last line before a crash names the exact failing test,
 #   - sets `ONEDNN_VERBOSE=1` so OpenVINO's oneDNN logs the ISA/kernel it
-#     dispatched right before any fault,
-#   - logs the runner CPU/ISA.
-#
-# The goal of this pass is to REPRODUCE the failure, not isolate it.
+#     dispatched right before any fault.
 #
 # Delete this file once the crash is diagnosed.
 on:
@@ -75,8 +71,7 @@ jobs:
       if: runner.os == 'Linux'
       run: lscpu
 
-    # Run the tests exactly like main.yml (no --no-default-features, no name
-    # filter) so this reproduces the merge-CI configuration where openvino +
-    # winml run in every job. Serialized and unbuffered so the last line before
-    # a native crash names the exact failing test.
-    - run: cargo test -p wasmtime-wasi-nn --features ${{ matrix.feature }} -- --test-threads=1 --nocapture
+    # Run the tests, serialized and unbuffered so the last line before a native
+    # crash names the exact failing test. Filter by backend name so each job
+    # runs only its own backend's tests (default features compile them all in).
+    - run: cargo test -p wasmtime-wasi-nn --features ${{ matrix.feature }} -- ${{ matrix.feature == 'onnx-download' && 'onnx' || matrix.feature }} --test-threads=1 --nocapture
