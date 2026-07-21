@@ -29,20 +29,26 @@ jobs:
   test_wasi_nn:
     strategy:
       fail-fast: false
+      # NOTE: use an include-only matrix so every job is defined explicitly and
+      # GitHub does not merge entries. (A cross-product matrix plus an `include`
+      # that only ADDS `onednn_max_isa` to an existing feature/os combination
+      # gets MERGED into that combination instead of creating a new job, which
+      # would silently delete the uncapped windows openvino lane and break the
+      # A/B comparison below.)
       matrix:
-        feature: ["openvino", "onnx-download"]
-        os: ["ubuntu-24.04", "windows-2025"]
         include:
-          - os: windows-2025
-            feature: winml
-          # A/B experiment: same windows openvino test, but cap oneDNN's ISA at
-          # AVX2 so it can't JIT the bf16/AVX-512/AMX kernels that fault. If this
-          # lane passes while the uncapped openvino lane crashes on the same CPU
-          # class, the crash is confirmed as oneDNN bf16 misdispatch (and this is
-          # the fix). ONEDNN_VERBOSE below lets us verify the cap was honored.
-          - os: windows-2025
-            feature: openvino
-            onednn_max_isa: AVX2
+          - { feature: openvino, os: ubuntu-24.04 }
+          - { feature: onnx-download, os: ubuntu-24.04 }
+          - { feature: onnx-download, os: windows-2025 }
+          - { feature: winml, os: windows-2025 }
+          # A/B experiment on windows openvino, both lanes explicit so both run:
+          #   - uncapped: expected to crash (0xc000001d) on a bf16/AVX-512/AMX CPU
+          #   - isa=AVX2: caps oneDNN so it can't JIT the bf16 kernels; expected
+          #     to pass. If capped passes while uncapped crashes on the same CPU
+          #     class, the crash is confirmed as oneDNN bf16 misdispatch (and the
+          #     cap is the fix). ONEDNN_VERBOSE lets us verify the cap was honored.
+          - { feature: openvino, os: windows-2025 }
+          - { feature: openvino, os: windows-2025, onednn_max_isa: AVX2 }
     name: wasi-nn (${{ matrix.feature }}, ${{ matrix.os }}${{ matrix.onednn_max_isa && format(', isa={0}', matrix.onednn_max_isa) || '' }})
     runs-on: ${{ matrix.os }}
     env:
