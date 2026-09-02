@@ -10,7 +10,7 @@ use crate::features::{AvailableFeatures, Feature, Features};
 use crate::gpr::{self, Gpr, Size};
 use crate::imm::{Extension, Imm8, Imm16, Imm32, Imm64, Simm8, Simm32};
 use crate::mem::{Amode, GprMem, XmmMem};
-use crate::rex::RexPrefix;
+use crate::rex::{Rex2Map, RexPrefix};
 use crate::vex::VexPrefix;
 use crate::xmm::{self, Xmm};
 

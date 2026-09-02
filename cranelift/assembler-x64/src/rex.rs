@@ -42,13 +42,24 @@ const fn is_special_if_8bit(enc: u8) -> bool {
     enc >= 4 && enc <= 7
 }
 
-/// Construct and emit the REX prefix byte.
+/// Opcode maps representable by the APX REX2 `M` bit.
+#[derive(Clone, Copy)]
+pub(crate) enum Rex2Map {
+    Map0,
+    Map1,
+    Unsupported,
+}
+
+/// Construct and emit a REX or REX2 prefix.
 ///
 /// For more details, see section 2.2.1, "REX Prefixes" in Intel's reference
 /// manual.
 #[derive(Clone, Copy)]
 pub struct RexPrefix {
-    byte: u8,
+    rex: u8,
+    rex2: u8,
+    rex2_map: Rex2Map,
+    needs_rex2: bool,
     must_emit: bool,
 }
 
@@ -62,14 +73,16 @@ impl RexPrefix {
     #[inline]
     #[must_use]
     pub const fn one_op(enc: u8, w_bit: bool, uses_8bit: bool) -> Self {
+        assert!(enc < 32, "invalid register encoding");
         let must_emit = uses_8bit && is_special_if_8bit(enc);
         let w = if w_bit { 1 } else { 0 };
-        let r = 0;
-        let x = 0;
-        let b = (enc >> 3) & 1;
-        let flag = 0x40 | (w << 3) | (r << 2) | (x << 1) | b;
+        let b3 = (enc >> 3) & 1;
+        let b4 = (enc >> 4) & 1;
         Self {
-            byte: flag,
+            rex: 0x40 | (w << 3) | b3,
+            rex2: (b4 << 4) | (w << 3) | b3,
+            rex2_map: Rex2Map::Map0,
+            needs_rex2: b4 != 0,
             must_emit,
         }
     }
@@ -100,14 +113,19 @@ impl RexPrefix {
     #[inline]
     #[must_use]
     pub const fn mem_op(enc_reg: u8, enc_rm: u8, w_bit: bool, uses_8bit: bool) -> Self {
+        assert!(enc_reg < 32, "invalid register encoding");
+        assert!(enc_rm < 32, "invalid register encoding");
         let must_emit = uses_8bit && is_special_if_8bit(enc_reg);
         let w = if w_bit { 1 } else { 0 };
-        let r = (enc_reg >> 3) & 1;
-        let x = 0;
-        let b = (enc_rm >> 3) & 1;
-        let flag = 0x40 | (w << 3) | (r << 2) | (x << 1) | b;
+        let r3 = (enc_reg >> 3) & 1;
+        let r4 = (enc_reg >> 4) & 1;
+        let b3 = (enc_rm >> 3) & 1;
+        let b4 = (enc_rm >> 4) & 1;
         Self {
-            byte: flag,
+            rex: 0x40 | (w << 3) | (r3 << 2) | b3,
+            rex2: (r4 << 6) | (b4 << 4) | (w << 3) | (r3 << 2) | b3,
+            rex2_map: Rex2Map::Map0,
+            needs_rex2: (r4 | b4) != 0,
             must_emit,
         }
     }
@@ -121,6 +139,7 @@ impl RexPrefix {
     #[inline]
     #[must_use]
     pub const fn with_digit(digit: u8, enc_reg: u8, w_bit: bool, uses_8bit: bool) -> Self {
+        assert!(digit < 8, "invalid opcode digit");
         Self::two_op(digit, enc_reg, w_bit, uses_8bit)
     }
 
@@ -140,27 +159,105 @@ impl RexPrefix {
         w_bit: bool,
         uses_8bit: bool,
     ) -> Self {
+        assert!(enc_reg < 32, "invalid register encoding");
+        assert!(enc_index < 32, "invalid register encoding");
+        assert!(enc_base < 32, "invalid register encoding");
         let must_emit = uses_8bit && is_special_if_8bit(enc_reg);
         let w = if w_bit { 1 } else { 0 };
-        let r = (enc_reg >> 3) & 1;
-        let x = (enc_index >> 3) & 1;
-        let b = (enc_base >> 3) & 1;
-        let flag = 0x40 | (w << 3) | (r << 2) | (x << 1) | b;
+        let r3 = (enc_reg >> 3) & 1;
+        let r4 = (enc_reg >> 4) & 1;
+        let x3 = (enc_index >> 3) & 1;
+        let x4 = (enc_index >> 4) & 1;
+        let b3 = (enc_base >> 3) & 1;
+        let b4 = (enc_base >> 4) & 1;
         Self {
-            byte: flag,
+            rex: 0x40 | (w << 3) | (r3 << 2) | (x3 << 1) | b3,
+            rex2: (r4 << 6)
+                | (x4 << 5)
+                | (b4 << 4)
+                | (w << 3)
+                | (r3 << 2)
+                | (x3 << 1)
+                | b3,
+            rex2_map: Rex2Map::Map0,
+            needs_rex2: (r4 | x4 | b4) != 0,
             must_emit,
         }
     }
 
-    /// Possibly emit the REX prefix byte.
+    #[must_use]
+    pub(crate) const fn with_rex2_map(mut self, map: Rex2Map) -> Self {
+        self.rex2_map = map;
+        self
+    }
+
+    /// Possibly emit a REX or REX2 prefix.
     ///
-    /// This will only be emitted if the REX prefix is not `0x40` (the default)
-    /// or if the instruction uses 8-bit operands.
+    /// Returns `true` when REX2 was emitted. A map-1 instruction alone does not
+    /// select REX2; the prefix is selected only when a register needs bit 4.
     #[inline]
-    pub fn encode(&self, sink: &mut impl CodeSink) {
-        if self.byte != 0x40 || self.must_emit {
-            sink.put1(self.byte);
+    pub fn encode(&self, sink: &mut impl CodeSink) -> bool {
+        if self.needs_rex2 {
+            let m = match self.rex2_map {
+                Rex2Map::Map0 => 0,
+                Rex2Map::Map1 => 1,
+                Rex2Map::Unsupported => panic!("REX2 cannot encode this opcode map"),
+            };
+            sink.put1(0xd5);
+            sink.put1((m << 7) | self.rex2);
+            true
+        } else {
+            if self.rex != 0x40 || self.must_emit {
+                sink.put1(self.rex);
+            }
+            false
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Rex2Map, RexPrefix};
+    use alloc::vec::Vec;
+
+    #[test]
+    fn dynamically_select_rex_or_rex2() {
+        let mut bytes = Vec::new();
+        assert!(!RexPrefix::two_op(0, 1, false, false).encode(&mut bytes));
+        assert_eq!(bytes, []);
+
+        bytes.clear();
+        assert!(!RexPrefix::two_op(8, 9, true, false).encode(&mut bytes));
+        assert_eq!(bytes, [0x4d]);
+
+        bytes.clear();
+        assert!(RexPrefix::two_op(16, 17, true, false).encode(&mut bytes));
+        assert_eq!(bytes, [0xd5, 0x58]);
+
+        bytes.clear();
+        let prefix = RexPrefix::two_op(16, 1, false, false).with_rex2_map(Rex2Map::Map1);
+        assert!(prefix.encode(&mut bytes));
+        assert_eq!(bytes, [0xd5, 0xc0]);
+
+        bytes.clear();
+        let prefix = RexPrefix::two_op(0, 1, false, false).with_rex2_map(Rex2Map::Map1);
+        assert!(!prefix.encode(&mut bytes));
+        assert_eq!(bytes, []);
+    }
+
+    #[test]
+    fn encode_rex2_sib_extensions() {
+        let mut bytes = Vec::new();
+        assert!(RexPrefix::three_op(24, 18, 11, true, false).encode(&mut bytes));
+        assert_eq!(bytes, [0xd5, 0x6d]);
+    }
+
+    #[test]
+    #[should_panic(expected = "REX2 cannot encode this opcode map")]
+    fn reject_rex2_for_unsupported_map() {
+        let prefix =
+            RexPrefix::one_op(16, false, false).with_rex2_map(Rex2Map::Unsupported);
+        prefix.encode(&mut Vec::new());
     }
 }
 

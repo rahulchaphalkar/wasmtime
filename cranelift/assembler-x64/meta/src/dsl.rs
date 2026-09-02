@@ -13,7 +13,8 @@ pub use custom::{Custom, Customization};
 pub use encoding::{ApxClass, Evex, Length, Vex, VexEscape, VexPrefix, evex, vex};
 pub use encoding::{Encoding, ModRmKind, OpcodeMod};
 pub use encoding::{
-    Group1Prefix, Group2Prefix, Group3Prefix, Group4Prefix, Opcodes, Prefixes, Rex, TupleType, rex,
+    Group1Prefix, Group2Prefix, Group3Prefix, Group4Prefix, Opcodes, Prefixes, Rex, Rex2Map,
+    TupleType, rex,
 };
 pub use features::{ALL_FEATURES, Feature, Features};
 pub use format::{Eflags, Extension, Format, Location, Mutability, Operand, OperandKind, RegClass};

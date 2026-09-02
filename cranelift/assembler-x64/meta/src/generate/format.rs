@@ -113,8 +113,8 @@ impl dsl::Format {
 
     pub(crate) fn generate_rex_encoding(&self, f: &mut Formatter, rex: &dsl::Rex) {
         self.generate_prefixes(f, rex);
-        let style = self.generate_rex_prefix(f, rex);
-        rex.generate_opcodes(f, self.locations().next());
+        let (style, has_rex_prefix) = self.generate_rex_prefix(f, rex);
+        rex.generate_opcodes(f, self.locations().next(), has_rex_prefix);
         self.generate_modrm_byte(f, style);
         self.generate_immediate(f, style);
     }
@@ -153,13 +153,13 @@ impl dsl::Format {
         }
     }
 
-    fn generate_rex_prefix(&self, f: &mut Formatter, rex: &dsl::Rex) -> ModRmStyle {
+    fn generate_rex_prefix(&self, f: &mut Formatter, rex: &dsl::Rex) -> (ModRmStyle, bool) {
         use dsl::OperandKind::{FixedReg, Imm, Mem, Reg, RegMem};
 
         // If this instruction has only immediates there's no rex/modrm/etc, so
         // skip everything below.
         match self.operands_by_kind().as_slice() {
-            [] | [Imm(_)] => return ModRmStyle::None,
+            [] | [Imm(_)] => return (ModRmStyle::None, false),
             _ => {}
         }
 
@@ -247,8 +247,18 @@ impl dsl::Format {
             unknown => unimplemented!("unknown pattern: {unknown:?}"),
         };
 
-        fmtln!(f, "rex.encode(buf);");
-        style
+        let map = match rex.rex2_map() {
+            dsl::Rex2Map::Map0 => "Rex2Map::Map0",
+            dsl::Rex2Map::Map1 => "Rex2Map::Map1",
+            dsl::Rex2Map::Unsupported => "Rex2Map::Unsupported",
+        };
+        fmtln!(f, "let rex = rex.with_rex2_map({map});");
+        if rex.opcodes.escape {
+            fmtln!(f, "let uses_rex2 = rex.encode(buf);");
+        } else {
+            fmtln!(f, "rex.encode(buf);");
+        }
+        (style, true)
     }
 
     fn generate_vex_prefix(&self, f: &mut Formatter, vex: &dsl::Vex) -> ModRmStyle {
@@ -589,11 +599,20 @@ impl dsl::Format {
 
 impl dsl::Rex {
     // `buf.put1(...);`
-    fn generate_opcodes(&self, f: &mut Formatter, first_op: Option<&dsl::Location>) {
+    fn generate_opcodes(
+        &self,
+        f: &mut Formatter,
+        first_op: Option<&dsl::Location>,
+        has_rex_prefix: bool,
+    ) {
         f.empty_line();
         f.comment("Emit opcode(s).");
         if self.opcodes.escape {
-            fmtln!(f, "buf.put1(0x0f);");
+            if has_rex_prefix {
+                f.add_block("if !uses_rex2", |f| fmtln!(f, "buf.put1(0x0f);"));
+            } else {
+                fmtln!(f, "buf.put1(0x0f);");
+            }
         }
         if self.opcode_mod.is_some() {
             let first_op = first_op.expect("Expected first operand for opcode_mod");

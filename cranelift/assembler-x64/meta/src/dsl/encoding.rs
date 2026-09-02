@@ -154,6 +154,17 @@ impl fmt::Display for ModRmKind {
     }
 }
 
+/// Opcode maps representable by the APX REX2 `M` bit.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum Rex2Map {
+    /// The one-byte opcode map (`M = 0`).
+    Map0,
+    /// The `0x0f` opcode map (`M = 1`).
+    Map1,
+    /// An opcode map that REX2 cannot represent.
+    Unsupported,
+}
+
 /// The traditional x64 encoding.
 ///
 /// We use the "REX" name here in a slightly unorthodox way: "REX" is the name
@@ -201,6 +212,16 @@ pub struct Rex {
 }
 
 impl Rex {
+    /// Classify this encoding's opcode map for APX REX2.
+    #[must_use]
+    pub fn rex2_map(&self) -> Rex2Map {
+        match (self.opcodes.escape, self.opcodes.secondary) {
+            (false, None) => Rex2Map::Map0,
+            (true, None) => Rex2Map::Map1,
+            _ => Rex2Map::Unsupported,
+        }
+    }
+
     /// Set the `REX.W` bit.
     #[must_use]
     pub fn w(self) -> Self {
@@ -505,6 +526,27 @@ impl<const N: usize> From<[u8; N]> for Opcodes {
             primary,
             secondary,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Rex2Map, rex};
+
+    #[test]
+    fn classify_rex2_opcode_maps() {
+        assert_eq!(rex(0x89).rex2_map(), Rex2Map::Map0);
+        assert_eq!(rex([0x66, 0x89]).rex2_map(), Rex2Map::Map0);
+        assert_eq!(rex([0x0f, 0xbc]).rex2_map(), Rex2Map::Map1);
+        assert_eq!(rex([0xf3, 0x0f, 0xbc]).rex2_map(), Rex2Map::Map1);
+        assert_eq!(
+            rex([0x0f, 0x38, 0xf0]).rex2_map(),
+            Rex2Map::Unsupported
+        );
+        assert_eq!(
+            rex([0x66, 0x0f, 0x3a, 0x0f]).rex2_map(),
+            Rex2Map::Unsupported
+        );
     }
 }
 
