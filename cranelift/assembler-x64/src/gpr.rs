@@ -25,7 +25,7 @@ impl<R: AsReg> Gpr<R> {
     /// Panics if the register is not a valid x64 register.
     pub fn enc(&self) -> u8 {
         let enc = self.0.enc();
-        assert!(enc < 16, "invalid register: {enc}");
+        assert!(enc < 32, "invalid register: {enc}");
         enc
     }
 
@@ -91,7 +91,7 @@ impl<R: AsReg> NonRspGpr<R> {
     /// Panics if the register is invalid or `%rsp`.
     pub fn enc(&self) -> u8 {
         let enc = self.0.enc();
-        assert!(enc < 16, "invalid register: {enc}");
+        assert!(enc < 32, "invalid register: {enc}");
         assert_ne!(enc, enc::RSP, "invalid register: %rsp");
         enc
     }
@@ -135,6 +135,22 @@ pub mod enc {
     pub const R13: u8 = 13;
     pub const R14: u8 = 14;
     pub const R15: u8 = 15;
+    pub const R16: u8 = 16;
+    pub const R17: u8 = 17;
+    pub const R18: u8 = 18;
+    pub const R19: u8 = 19;
+    pub const R20: u8 = 20;
+    pub const R21: u8 = 21;
+    pub const R22: u8 = 22;
+    pub const R23: u8 = 23;
+    pub const R24: u8 = 24;
+    pub const R25: u8 = 25;
+    pub const R26: u8 = 26;
+    pub const R27: u8 = 27;
+    pub const R28: u8 = 28;
+    pub const R29: u8 = 29;
+    pub const R30: u8 = 30;
+    pub const R31: u8 = 31;
 
     /// Return the name of a GPR encoding (`enc`) at the given `size`.
     ///
@@ -240,6 +256,30 @@ pub mod enc {
                 Doubleword => "%r15d",
                 Quadword => "%r15",
             },
+            R16..=R31 => {
+                let index = usize::from(enc - R16);
+                match size {
+                    Byte => [
+                        "%r16b", "%r17b", "%r18b", "%r19b", "%r20b", "%r21b", "%r22b",
+                        "%r23b", "%r24b", "%r25b", "%r26b", "%r27b", "%r28b", "%r29b",
+                        "%r30b", "%r31b",
+                    ][index],
+                    Word => [
+                        "%r16w", "%r17w", "%r18w", "%r19w", "%r20w", "%r21w", "%r22w",
+                        "%r23w", "%r24w", "%r25w", "%r26w", "%r27w", "%r28w", "%r29w",
+                        "%r30w", "%r31w",
+                    ][index],
+                    Doubleword => [
+                        "%r16d", "%r17d", "%r18d", "%r19d", "%r20d", "%r21d", "%r22d",
+                        "%r23d", "%r24d", "%r25d", "%r26d", "%r27d", "%r28d", "%r29d",
+                        "%r30d", "%r31d",
+                    ][index],
+                    Quadword => [
+                        "%r16", "%r17", "%r18", "%r19", "%r20", "%r21", "%r22", "%r23",
+                        "%r24", "%r25", "%r26", "%r27", "%r28", "%r29", "%r30", "%r31",
+                    ][index],
+                }
+            }
             _ => panic!("%invalid{enc}"),
         }
     }

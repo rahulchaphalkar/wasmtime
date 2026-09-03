@@ -17,7 +17,7 @@ pub fn list() -> Vec<Inst> {
         inst("addb", fmt("MR", [rw(rm8), r(r8)]), rex(0x0).r(), _64b | compat),
         inst("addw", fmt("MR", [rw(rm16), r(r16)]), rex([0x66, 0x1]).r(), _64b | compat),
         inst("addl", fmt("MR", [rw(rm32), r(r32)]), rex(0x1).r(), _64b | compat),
-        inst("addq", fmt("MR", [rw(rm64), r(r64)]), rex(0x1).w().r(), _64b),
+        inst("addq", fmt("MR", [rw(rm64), r(r64)]), rex(0x1).w().r().rex2(), _64b),
         inst("addb", fmt("RM", [rw(r8), r(rm8)]), rex(0x2).r(), _64b | compat),
         inst("addw", fmt("RM", [rw(r16), r(rm16)]), rex([0x66, 0x3]).r(), _64b | compat),
         inst("addl", fmt("RM", [rw(r32), r(rm32)]), rex(0x3).r(), _64b | compat),

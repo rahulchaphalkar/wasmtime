@@ -284,7 +284,8 @@ impl dsl::Inst {
         fmtln!(f, "#[must_use]");
         f.add_block("pub fn num_registers_available(&self) -> usize", |f| {
             use dsl::Encoding::*;
-            let n = match self.encoding {
+            let n = match &self.encoding {
+                Rex(rex) if rex.rex2 => 32,
                 Rex(_) | Vex(_) => 16,
                 Evex(_) => 32,
             };

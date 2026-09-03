@@ -27,6 +27,7 @@ pub fn rex(opcode: impl Into<Opcodes>) -> Rex {
         modrm: None,
         imm: Imm::None,
         opcode_mod: None,
+        rex2: false,
     }
 }
 
@@ -209,17 +210,29 @@ pub struct Rex {
     /// field encodes the register operand of the instruction. “+ro” is
     /// applicable only in 64-bit mode."
     pub opcode_mod: Option<OpcodeMod>,
+    /// Whether this instruction can use APX REX2 when an operand needs an
+    /// extended general-purpose register.
+    pub rex2: bool,
 }
 
 impl Rex {
     /// Classify this encoding's opcode map for APX REX2.
     #[must_use]
     pub fn rex2_map(&self) -> Rex2Map {
+        if !self.rex2 {
+            return Rex2Map::Unsupported;
+        }
         match (self.opcodes.escape, self.opcodes.secondary) {
             (false, None) => Rex2Map::Map0,
             (true, None) => Rex2Map::Map1,
             _ => Rex2Map::Unsupported,
         }
+    }
+
+    /// Allow this instruction to select APX REX2 for extended GPR operands.
+    #[must_use]
+    pub fn rex2(self) -> Self {
+        Self { rex2: true, ..self }
     }
 
     /// Set the `REX.W` bit.
@@ -535,16 +548,17 @@ mod tests {
 
     #[test]
     fn classify_rex2_opcode_maps() {
-        assert_eq!(rex(0x89).rex2_map(), Rex2Map::Map0);
-        assert_eq!(rex([0x66, 0x89]).rex2_map(), Rex2Map::Map0);
-        assert_eq!(rex([0x0f, 0xbc]).rex2_map(), Rex2Map::Map1);
-        assert_eq!(rex([0xf3, 0x0f, 0xbc]).rex2_map(), Rex2Map::Map1);
+        assert_eq!(rex(0x89).rex2_map(), Rex2Map::Unsupported);
+        assert_eq!(rex(0x89).rex2().rex2_map(), Rex2Map::Map0);
+        assert_eq!(rex([0x66, 0x89]).rex2().rex2_map(), Rex2Map::Map0);
+        assert_eq!(rex([0x0f, 0xbc]).rex2().rex2_map(), Rex2Map::Map1);
+        assert_eq!(rex([0xf3, 0x0f, 0xbc]).rex2().rex2_map(), Rex2Map::Map1);
         assert_eq!(
-            rex([0x0f, 0x38, 0xf0]).rex2_map(),
+            rex([0x0f, 0x38, 0xf0]).rex2().rex2_map(),
             Rex2Map::Unsupported
         );
         assert_eq!(
-            rex([0x66, 0x0f, 0x3a, 0x0f]).rex2_map(),
+            rex([0x66, 0x0f, 0x3a, 0x0f]).rex2().rex2_map(),
             Rex2Map::Unsupported
         );
     }

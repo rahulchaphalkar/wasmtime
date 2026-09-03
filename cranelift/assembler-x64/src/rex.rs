@@ -46,6 +46,7 @@ const fn is_special_if_8bit(enc: u8) -> bool {
 #[derive(Clone, Copy)]
 pub(crate) enum Rex2Map {
     Map0,
+    #[allow(dead_code, reason = "used once a map-1 instruction opts into REX2")]
     Map1,
     Unsupported,
 }
