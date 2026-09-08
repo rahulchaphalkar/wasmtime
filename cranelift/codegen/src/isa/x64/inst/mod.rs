@@ -1213,10 +1213,44 @@ fn x64_get_operands(inst: &mut Inst, collector: &mut impl OperandVisitor) {
 
         Inst::SequencePoint { .. } => {}
 
-        Inst::External { inst } => {
-            let limits = inst.register_limits();
-            inst.visit(&mut external::RegallocVisitor { collector, limits });
-        }
+        Inst::External { .. } => unreachable!(),
+    }
+}
+
+struct RegisterLimitedVisitor<'a, T> {
+    inner: &'a mut T,
+    limit: usize,
+}
+
+impl<T: OperandVisitor> OperandVisitor for RegisterLimitedVisitor<'_, T> {
+    fn add_operand(
+        &mut self,
+        reg: &mut Reg,
+        constraint: regalloc2::OperandConstraint,
+        kind: regalloc2::OperandKind,
+        pos: regalloc2::OperandPos,
+    ) {
+        let constraint = match constraint {
+            regalloc2::OperandConstraint::Reg
+                if self.inner.is_reg_limit_relevant(reg.class(), self.limit) =>
+            {
+                regalloc2::OperandConstraint::Limit(self.limit)
+            }
+            _ => constraint,
+        };
+        self.inner.add_operand(reg, constraint, kind, pos);
+    }
+
+    fn debug_assert_is_allocatable_preg(&self, reg: regalloc2::PReg, expected: bool) {
+        self.inner.debug_assert_is_allocatable_preg(reg, expected);
+    }
+
+    fn is_reg_limit_relevant(&self, class: regalloc2::RegClass, limit: usize) -> bool {
+        self.inner.is_reg_limit_relevant(class, limit)
+    }
+
+    fn reg_clobbers(&mut self, regs: regalloc2::PRegSet) {
+        self.inner.reg_clobbers(regs);
     }
 }
 
@@ -1227,7 +1261,18 @@ impl MachInst for Inst {
     type ABIMachineSpec = X64ABIMachineSpec;
 
     fn get_operands(&mut self, collector: &mut impl OperandVisitor) {
-        x64_get_operands(self, collector)
+        if let Inst::External { inst } = self {
+            let limits = inst.register_limits();
+            inst.visit(&mut external::RegallocVisitor { collector, limits });
+        } else {
+            x64_get_operands(
+                self,
+                &mut RegisterLimitedVisitor {
+                    inner: collector,
+                    limit: 16,
+                },
+            );
+        }
     }
 
     fn is_move(&self) -> Option<(Writable<Reg>, Reg)> {
@@ -1612,6 +1657,31 @@ impl MachInstEmit for Inst {
 
     fn pretty_print_inst(&self, _: &mut Self::State) -> String {
         PrettyPrint::pretty_print(self, 0)
+    }
+}
+
+#[cfg(test)]
+mod register_limit_tests {
+    use super::*;
+    use regalloc2::{OperandConstraint, PReg, PRegSet, RegClass, VReg};
+
+    #[test]
+    fn handwritten_instructions_exclude_egprs() {
+        let dst: Reg = VReg::new(200, RegClass::Int).into();
+        let mut inst = Inst::GprUninitializedValue {
+            dst: Writable::from_reg(Gpr::unwrap_new(dst)),
+        };
+        let allocatable = PRegSet::empty()
+            .with(PReg::new(0, RegClass::Int))
+            .with(PReg::new(16, RegClass::Int));
+        let mut operands = vec![];
+        let mut collector = OperandCollector::new(&mut operands, allocatable, |vreg| vreg);
+
+        inst.get_operands(&mut collector);
+        collector.finish();
+
+        assert_eq!(operands.len(), 1);
+        assert_eq!(operands[0].constraint(), OperandConstraint::Limit(16));
     }
 }
 
