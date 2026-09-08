@@ -1,6 +1,6 @@
 //! Register definitions for regalloc2.
 //!
-//! We define 16 GPRs, with indices equal to the hardware encoding,
+//! We define 32 GPRs, with indices equal to the hardware encoding,
 //! and 16 XMM registers.
 //!
 //! Note also that we make use of pinned VRegs to refer to PRegs.
@@ -68,6 +68,54 @@ pub(crate) const fn r14() -> Reg {
 }
 pub(crate) const fn r15() -> Reg {
     gpr(gpr::enc::R15)
+}
+pub(crate) const fn r16() -> Reg {
+    gpr(gpr::enc::R16)
+}
+pub(crate) const fn r17() -> Reg {
+    gpr(gpr::enc::R17)
+}
+pub(crate) const fn r18() -> Reg {
+    gpr(gpr::enc::R18)
+}
+pub(crate) const fn r19() -> Reg {
+    gpr(gpr::enc::R19)
+}
+pub(crate) const fn r20() -> Reg {
+    gpr(gpr::enc::R20)
+}
+pub(crate) const fn r21() -> Reg {
+    gpr(gpr::enc::R21)
+}
+pub(crate) const fn r22() -> Reg {
+    gpr(gpr::enc::R22)
+}
+pub(crate) const fn r23() -> Reg {
+    gpr(gpr::enc::R23)
+}
+pub(crate) const fn r24() -> Reg {
+    gpr(gpr::enc::R24)
+}
+pub(crate) const fn r25() -> Reg {
+    gpr(gpr::enc::R25)
+}
+pub(crate) const fn r26() -> Reg {
+    gpr(gpr::enc::R26)
+}
+pub(crate) const fn r27() -> Reg {
+    gpr(gpr::enc::R27)
+}
+pub(crate) const fn r28() -> Reg {
+    gpr(gpr::enc::R28)
+}
+pub(crate) const fn r29() -> Reg {
+    gpr(gpr::enc::R29)
+}
+pub(crate) const fn r30() -> Reg {
+    gpr(gpr::enc::R30)
+}
+pub(crate) const fn r31() -> Reg {
+    gpr(gpr::enc::R31)
 }
 
 /// The pinned register on this architecture.

@@ -1176,7 +1176,11 @@ impl ABIMachineSpec for AArch64MachineDeps {
         }
     }
 
-    fn get_machine_env(flags: &settings::Flags, _call_conv: isa::CallConv) -> &MachineEnv {
+    fn get_machine_env(
+        flags: &settings::Flags,
+        _isa_flags: &Self::F,
+        _call_conv: isa::CallConv,
+    ) -> &'static MachineEnv {
         if flags.enable_pinned_reg() {
             static MACHINE_ENV: MachineEnv = create_reg_env(true);
             &MACHINE_ENV

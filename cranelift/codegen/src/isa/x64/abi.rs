@@ -872,13 +872,53 @@ impl ABIMachineSpec for X64ABIMachineSpec {
         }
     }
 
-    fn get_machine_env(flags: &settings::Flags, _call_conv: isa::CallConv) -> &MachineEnv {
-        if flags.enable_pinned_reg() {
-            static MACHINE_ENV: MachineEnv = create_reg_env_systemv(true);
-            &MACHINE_ENV
+    fn get_machine_env(
+        flags: &settings::Flags,
+        isa_flags: &Self::F,
+        call_conv: isa::CallConv,
+    ) -> &'static MachineEnv {
+        use crate::settings::RegallocAlgorithm;
+
+        let apx_last_reg = if isa_flags.has_apx()
+            && flags.regalloc_algorithm() == RegallocAlgorithm::Backtracking
+        {
+            match call_conv {
+                // R30 and R31 are callee-saved in the Windows APX ABI. Keep
+                // them reserved until their unwind support is implemented.
+                isa::CallConv::WindowsFastcall => Some(asm::gpr::enc::R29),
+                // PreserveAll would need unwind mappings for saved EGPRs.
+                isa::CallConv::PreserveAll => None,
+                _ => Some(asm::gpr::enc::R31),
+            }
         } else {
-            static MACHINE_ENV: MachineEnv = create_reg_env_systemv(false);
-            &MACHINE_ENV
+            None
+        };
+
+        match (flags.enable_pinned_reg(), apx_last_reg) {
+            (true, Some(asm::gpr::enc::R29)) => {
+                static MACHINE_ENV: MachineEnv = create_reg_env(true, Some(asm::gpr::enc::R29));
+                &MACHINE_ENV
+            }
+            (false, Some(asm::gpr::enc::R29)) => {
+                static MACHINE_ENV: MachineEnv = create_reg_env(false, Some(asm::gpr::enc::R29));
+                &MACHINE_ENV
+            }
+            (true, Some(_)) => {
+                static MACHINE_ENV: MachineEnv = create_reg_env(true, Some(asm::gpr::enc::R31));
+                &MACHINE_ENV
+            }
+            (false, Some(_)) => {
+                static MACHINE_ENV: MachineEnv = create_reg_env(false, Some(asm::gpr::enc::R31));
+                &MACHINE_ENV
+            }
+            (true, None) => {
+                static MACHINE_ENV: MachineEnv = create_reg_env(true, None);
+                &MACHINE_ENV
+            }
+            (false, None) => {
+                static MACHINE_ENV: MachineEnv = create_reg_env(false, None);
+                &MACHINE_ENV
+            }
         }
     }
 
@@ -1199,6 +1239,20 @@ const fn windows_clobbers() -> PRegSet {
         .with(regs::gpr_preg(R9))
         .with(regs::gpr_preg(R10))
         .with(regs::gpr_preg(R11))
+        .with(regs::gpr_preg(R16))
+        .with(regs::gpr_preg(R17))
+        .with(regs::gpr_preg(R18))
+        .with(regs::gpr_preg(R19))
+        .with(regs::gpr_preg(R20))
+        .with(regs::gpr_preg(R21))
+        .with(regs::gpr_preg(R22))
+        .with(regs::gpr_preg(R23))
+        .with(regs::gpr_preg(R24))
+        .with(regs::gpr_preg(R25))
+        .with(regs::gpr_preg(R26))
+        .with(regs::gpr_preg(R27))
+        .with(regs::gpr_preg(R28))
+        .with(regs::gpr_preg(R29))
         .with(regs::fpr_preg(XMM0))
         .with(regs::fpr_preg(XMM1))
         .with(regs::fpr_preg(XMM2))
@@ -1221,6 +1275,22 @@ const fn sysv_clobbers() -> PRegSet {
         .with(regs::gpr_preg(R9))
         .with(regs::gpr_preg(R10))
         .with(regs::gpr_preg(R11))
+        .with(regs::gpr_preg(R16))
+        .with(regs::gpr_preg(R17))
+        .with(regs::gpr_preg(R18))
+        .with(regs::gpr_preg(R19))
+        .with(regs::gpr_preg(R20))
+        .with(regs::gpr_preg(R21))
+        .with(regs::gpr_preg(R22))
+        .with(regs::gpr_preg(R23))
+        .with(regs::gpr_preg(R24))
+        .with(regs::gpr_preg(R25))
+        .with(regs::gpr_preg(R26))
+        .with(regs::gpr_preg(R27))
+        .with(regs::gpr_preg(R28))
+        .with(regs::gpr_preg(R29))
+        .with(regs::gpr_preg(R30))
+        .with(regs::gpr_preg(R31))
         .with(regs::fpr_preg(XMM0))
         .with(regs::fpr_preg(XMM1))
         .with(regs::fpr_preg(XMM2))
@@ -1259,6 +1329,22 @@ const fn all_clobbers() -> PRegSet {
         .with(regs::gpr_preg(R13))
         .with(regs::gpr_preg(R14))
         .with(regs::gpr_preg(R15))
+        .with(regs::gpr_preg(R16))
+        .with(regs::gpr_preg(R17))
+        .with(regs::gpr_preg(R18))
+        .with(regs::gpr_preg(R19))
+        .with(regs::gpr_preg(R20))
+        .with(regs::gpr_preg(R21))
+        .with(regs::gpr_preg(R22))
+        .with(regs::gpr_preg(R23))
+        .with(regs::gpr_preg(R24))
+        .with(regs::gpr_preg(R25))
+        .with(regs::gpr_preg(R26))
+        .with(regs::gpr_preg(R27))
+        .with(regs::gpr_preg(R28))
+        .with(regs::gpr_preg(R29))
+        .with(regs::gpr_preg(R30))
+        .with(regs::gpr_preg(R31))
         .with(regs::fpr_preg(XMM0))
         .with(regs::fpr_preg(XMM1))
         .with(regs::fpr_preg(XMM2))
@@ -1277,7 +1363,7 @@ const fn all_clobbers() -> PRegSet {
         .with(regs::fpr_preg(XMM15))
 }
 
-const fn create_reg_env_systemv(enable_pinned_reg: bool) -> MachineEnv {
+const fn create_reg_env(enable_pinned_reg: bool, apx_last_reg: Option<u8>) -> MachineEnv {
     const fn preg(r: Reg) -> PReg {
         r.to_real_reg().unwrap().preg()
     }
@@ -1340,6 +1426,29 @@ const fn create_reg_env_systemv(enable_pinned_reg: bool) -> MachineEnv {
             env.non_preferred_regs_by_class[0].with(preg(regs::r15()));
     }
 
+    if apx_last_reg.is_some() {
+        env.preferred_regs_by_class[0] = env.preferred_regs_by_class[0]
+            .with(preg(regs::r16()))
+            .with(preg(regs::r17()))
+            .with(preg(regs::r18()))
+            .with(preg(regs::r19()))
+            .with(preg(regs::r20()))
+            .with(preg(regs::r21()))
+            .with(preg(regs::r22()))
+            .with(preg(regs::r23()))
+            .with(preg(regs::r24()))
+            .with(preg(regs::r25()))
+            .with(preg(regs::r26()))
+            .with(preg(regs::r27()))
+            .with(preg(regs::r28()))
+            .with(preg(regs::r29()));
+    }
+    if matches!(apx_last_reg, Some(asm::gpr::enc::R31)) {
+        env.preferred_regs_by_class[0] = env.preferred_regs_by_class[0]
+            .with(preg(regs::r30()))
+            .with(preg(regs::r31()));
+    }
+
     env
 }
 
@@ -1347,7 +1456,61 @@ const fn create_reg_env_systemv(enable_pinned_reg: bool) -> MachineEnv {
 mod tests {
     use super::*;
     use crate::machinst::abi::Callee;
+    use crate::settings::Configurable;
     use alloc::vec::Vec;
+
+    fn register_env(
+        has_apx: bool,
+        regalloc_algorithm: &str,
+        call_conv: CallConv,
+    ) -> &'static MachineEnv {
+        let mut flag_builder = settings::builder();
+        flag_builder
+            .set("regalloc_algorithm", regalloc_algorithm)
+            .unwrap();
+        let flags = settings::Flags::new(flag_builder);
+        let mut isa_flag_builder = x64_settings::builder();
+        if has_apx {
+            isa_flag_builder.enable("has_apx").unwrap();
+        }
+        let isa_flags = x64_settings::Flags::new(&flags, &isa_flag_builder);
+        X64ABIMachineSpec::get_machine_env(&flags, &isa_flags, call_conv)
+    }
+
+    fn is_allocatable(env: &MachineEnv, enc: u8) -> bool {
+        let preg = regs::gpr_preg(enc);
+        env.preferred_regs_by_class[0].contains(preg)
+            || env.non_preferred_regs_by_class[0].contains(preg)
+    }
+
+    #[test]
+    fn apx_register_environment_requires_ion() {
+        let ion = register_env(true, "backtracking", CallConv::SystemV);
+        assert!(is_allocatable(ion, asm::gpr::enc::R16));
+        assert!(is_allocatable(ion, asm::gpr::enc::R31));
+
+        let fastalloc = register_env(true, "single_pass", CallConv::SystemV);
+        assert!(!is_allocatable(fastalloc, asm::gpr::enc::R16));
+
+        let no_apx = register_env(false, "backtracking", CallConv::SystemV);
+        assert!(!is_allocatable(no_apx, asm::gpr::enc::R16));
+    }
+
+    #[test]
+    fn windows_apx_reserves_callee_saved_egprs() {
+        let env = register_env(true, "backtracking", CallConv::WindowsFastcall);
+        assert!(is_allocatable(env, asm::gpr::enc::R29));
+        assert!(!is_allocatable(env, asm::gpr::enc::R30));
+        assert!(!is_allocatable(env, asm::gpr::enc::R31));
+    }
+
+    #[test]
+    fn apx_call_clobbers_cover_allocatable_egprs() {
+        assert!(SYSV_CLOBBERS.contains(regs::gpr_preg(asm::gpr::enc::R31)));
+        assert!(WINDOWS_CLOBBERS.contains(regs::gpr_preg(asm::gpr::enc::R29)));
+        assert!(!WINDOWS_CLOBBERS.contains(regs::gpr_preg(asm::gpr::enc::R30)));
+        assert!(ALL_CLOBBERS.contains(regs::gpr_preg(asm::gpr::enc::R31)));
+    }
 
     fn make_frame_layout(total_relevant_fields_sum: u32) -> FrameLayout {
         FrameLayout {
