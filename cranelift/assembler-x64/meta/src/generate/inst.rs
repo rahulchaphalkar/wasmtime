@@ -279,17 +279,13 @@ impl dsl::Inst {
         });
     }
 
-    /// `fn num_registers_available(&self) -> usize { ... }`
+    /// `fn register_limits(&self) -> RegisterLimits { ... }`
     fn generate_num_registers_function(&self, f: &mut Formatter) {
         fmtln!(f, "#[must_use]");
-        f.add_block("pub fn num_registers_available(&self) -> usize", |f| {
-            use dsl::Encoding::*;
-            let n = match &self.encoding {
-                Rex(rex) if rex.rex2 => 32,
-                Rex(_) | Vex(_) => 16,
-                Evex(_) => 32,
-            };
-            fmtln!(f, "{n}")
+        f.add_block("pub fn register_limits(&self) -> RegisterLimits", |f| {
+            let gpr = self.encoding.gpr_register_limit();
+            let xmm = self.encoding.xmm_register_limit();
+            fmtln!(f, "RegisterLimits::new({gpr}, {xmm})")
         });
     }
 

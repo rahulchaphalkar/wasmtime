@@ -173,13 +173,7 @@ impl RexPrefix {
         let b4 = (enc_base >> 4) & 1;
         Self {
             rex: 0x40 | (w << 3) | (r3 << 2) | (x3 << 1) | b3,
-            rex2: (r4 << 6)
-                | (x4 << 5)
-                | (b4 << 4)
-                | (w << 3)
-                | (r3 << 2)
-                | (x3 << 1)
-                | b3,
+            rex2: (r4 << 6) | (x4 << 5) | (b4 << 4) | (w << 3) | (r3 << 2) | (x3 << 1) | b3,
             rex2_map: Rex2Map::Map0,
             needs_rex2: (r4 | x4 | b4) != 0,
             must_emit,
@@ -256,8 +250,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "REX2 cannot encode this opcode map")]
     fn reject_rex2_for_unsupported_map() {
-        let prefix =
-            RexPrefix::one_op(16, false, false).with_rex2_map(Rex2Map::Unsupported);
+        let prefix = RexPrefix::one_op(16, false, false).with_rex2_map(Rex2Map::Unsupported);
         prefix.encode(&mut Vec::new());
     }
 }

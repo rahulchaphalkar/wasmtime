@@ -144,11 +144,35 @@ impl AsReg for u8 {
     }
 }
 
+/// The number of hardware register encodings available to an instruction.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct RegisterLimits {
+    gpr: usize,
+    xmm: usize,
+}
+
+impl RegisterLimits {
+    /// Construct register limits for the GPR and XMM register classes.
+    pub const fn new(gpr: usize, xmm: usize) -> Self {
+        Self { gpr, xmm }
+    }
+
+    /// Return the exclusive upper bound for GPR hardware encodings.
+    pub const fn gpr(self) -> usize {
+        self.gpr
+    }
+
+    /// Return the exclusive upper bound for XMM hardware encodings.
+    pub const fn xmm(self) -> usize {
+        self.xmm
+    }
+}
+
 /// Describe a visitor for the register operands of an instruction.
 ///
 /// Due to how Cranelift's register allocation works, we allow the visitor to
 /// modify the register operands in place. This allows Cranelift to convert
-/// virtual registers (`[128..N)`) to physical registers (`[0..16)`) without
+/// virtual registers to physical registers without
 /// re-allocating the entire instruction object.
 pub trait RegisterVisitor<R: Registers> {
     /// Visit a read-only register.

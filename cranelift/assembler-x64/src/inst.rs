@@ -4,7 +4,7 @@
 //! See also: [`Inst`], an `enum` containing all these instructions.
 
 use crate::Fixed;
-use crate::api::{AsReg, CodeSink, RegisterVisitor, Registers, TrapCode};
+use crate::api::{AsReg, CodeSink, RegisterLimits, RegisterVisitor, Registers, TrapCode};
 use crate::evex::EvexPrefix;
 use crate::features::{AvailableFeatures, Feature, Features};
 use crate::gpr::{self, Gpr, Size};

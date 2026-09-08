@@ -411,6 +411,11 @@ pub trait OperandVisitor {
 
     fn debug_assert_is_allocatable_preg(&self, _reg: PReg, _expected: bool) {}
 
+    /// Return whether `limit` excludes any allocatable register in `class`.
+    fn is_reg_limit_relevant(&self, _class: RegClass, _limit: usize) -> bool {
+        false
+    }
+
     /// Add a register clobber set. This is a set of registers that
     /// are written by the instruction, so must be reserved (not used)
     /// for the whole instruction, but are not used afterward.
@@ -431,6 +436,11 @@ pub trait OperandVisitorImpl: OperandVisitor {
         self.reg_maybe_fixed(reg.as_mut(), OperandKind::Use, OperandPos::Early);
     }
 
+    /// Add a register use constrained to hardware encodings below `limit`.
+    fn reg_limited_use(&mut self, reg: &mut impl AsMut<Reg>, limit: usize) {
+        self.reg_maybe_fixed_with_limit(reg.as_mut(), OperandKind::Use, OperandPos::Early, limit);
+    }
+
     /// Add a register use, at the end of the instruction (`After` position).
     fn reg_late_use(&mut self, reg: &mut impl AsMut<Reg>) {
         self.reg_maybe_fixed(reg.as_mut(), OperandKind::Use, OperandPos::Late);
@@ -441,6 +451,16 @@ pub trait OperandVisitorImpl: OperandVisitor {
     /// uses are read.
     fn reg_def(&mut self, reg: &mut Writable<impl AsMut<Reg>>) {
         self.reg_maybe_fixed(reg.reg.as_mut(), OperandKind::Def, OperandPos::Late);
+    }
+
+    /// Add a register def constrained to hardware encodings below `limit`.
+    fn reg_limited_def(&mut self, reg: &mut Writable<impl AsMut<Reg>>, limit: usize) {
+        self.reg_maybe_fixed_with_limit(
+            reg.reg.as_mut(),
+            OperandKind::Def,
+            OperandPos::Late,
+            limit,
+        );
     }
 
     /// Add a register "early def", which logically occurs at the
@@ -485,6 +505,28 @@ pub trait OperandVisitorImpl: OperandVisitor {
         } else {
             debug_assert!(reg.is_virtual());
             self.add_operand(reg, OperandConstraint::Reg, kind, pos);
+        }
+    }
+
+    /// Add a register operand, applying `Limit` only when it excludes an
+    /// otherwise allocatable physical register.
+    fn reg_maybe_fixed_with_limit(
+        &mut self,
+        reg: &mut Reg,
+        kind: OperandKind,
+        pos: OperandPos,
+        limit: usize,
+    ) {
+        if let Some(rreg) = reg.to_real_reg() {
+            self.reg_fixed_nonallocatable(rreg.into());
+        } else {
+            debug_assert!(reg.is_virtual());
+            let constraint = if self.is_reg_limit_relevant(reg.class(), limit) {
+                OperandConstraint::Limit(limit)
+            } else {
+                OperandConstraint::Reg
+            };
+            self.add_operand(reg, constraint, kind, pos);
         }
     }
 
@@ -557,6 +599,12 @@ impl<'a, F: Fn(VReg) -> VReg> OperandVisitor for OperandCollector<'a, F> {
             "{reg:?} should{} be allocatable",
             if expected { "" } else { " not" }
         );
+    }
+
+    fn is_reg_limit_relevant(&self, class: RegClass, limit: usize) -> bool {
+        self.allocatable
+            .into_iter()
+            .any(|preg| preg.class() == class && preg.hw_enc() >= limit)
     }
 
     fn reg_clobbers(&mut self, regs: PRegSet) {

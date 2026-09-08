@@ -261,21 +261,22 @@ where
     T: OperandVisitorImpl,
 {
     pub collector: &'a mut T,
+    pub limits: asm::RegisterLimits,
 }
 
 impl<'a, T: OperandVisitor> asm::RegisterVisitor<CraneliftRegisters> for RegallocVisitor<'a, T> {
     fn read_gpr(&mut self, reg: &mut Gpr) {
-        self.collector.reg_use(reg);
+        self.collector.reg_limited_use(reg, self.limits.gpr());
     }
 
     fn read_write_gpr(&mut self, reg: &mut PairedGpr) {
         let PairedGpr { read, write } = reg;
-        self.collector.reg_use(read);
+        self.collector.reg_limited_use(read, self.limits.gpr());
         self.collector.reg_reuse_def(write, 0);
     }
 
     fn write_gpr(&mut self, reg: &mut WritableGpr) {
-        self.collector.reg_def(reg);
+        self.collector.reg_limited_def(reg, self.limits.gpr());
     }
 
     fn fixed_read_gpr(&mut self, reg: &mut Gpr, enc: u8) {
@@ -297,17 +298,17 @@ impl<'a, T: OperandVisitor> asm::RegisterVisitor<CraneliftRegisters> for Regallo
     }
 
     fn read_xmm(&mut self, reg: &mut Xmm) {
-        self.collector.reg_use(reg);
+        self.collector.reg_limited_use(reg, self.limits.xmm());
     }
 
     fn read_write_xmm(&mut self, reg: &mut PairedXmm) {
         let PairedXmm { read, write } = reg;
-        self.collector.reg_use(read);
+        self.collector.reg_limited_use(read, self.limits.xmm());
         self.collector.reg_reuse_def(write, 0);
     }
 
     fn write_xmm(&mut self, reg: &mut WritableXmm) {
-        self.collector.reg_def(reg);
+        self.collector.reg_limited_def(reg, self.limits.xmm());
     }
 
     fn fixed_read_xmm(&mut self, reg: &mut Xmm, enc: u8) {
@@ -523,12 +524,14 @@ pub(crate) use isle_assembler_methods;
 
 #[cfg(test)]
 mod tests {
-    use super::PairedGpr;
     use super::asm::{AsReg, Size};
+    use super::{CraneliftRegisters, PairedGpr, RegallocVisitor};
     use crate::isa::x64::args::{FromWritableReg, Gpr, WritableGpr, WritableXmm, Xmm};
     use crate::isa::x64::inst::external::PairedXmm;
+    use crate::machinst::OperandCollector;
     use crate::{Reg, Writable};
-    use regalloc2::{RegClass, VReg};
+    use alloc::vec::Vec;
+    use regalloc2::{OperandConstraint, PReg, PRegSet, RegClass, VReg};
 
     #[test]
     fn pretty_print_registers() {
@@ -560,5 +563,51 @@ mod tests {
             write: wxmm500,
         };
         assert_eq!(pair.to_string(None), "(%v500 <- %v400)");
+    }
+
+    #[test]
+    fn assembler_register_limits_constrain_egpr_allocation() {
+        let read: Reg = VReg::new(200, RegClass::Int).into();
+        let write: Reg = VReg::new(201, RegClass::Int).into();
+        let src: Reg = VReg::new(202, RegClass::Int).into();
+        let pair = PairedGpr {
+            read: Gpr::new(read).unwrap(),
+            write: WritableGpr::from_writable_reg(Writable::from_reg(write)).unwrap(),
+        };
+        let src = Gpr::new(src).unwrap();
+
+        let allocatable = PRegSet::empty()
+            .with(PReg::new(0, RegClass::Int))
+            .with(PReg::new(16, RegClass::Int));
+
+        let check = |mut inst: super::AsmInst, expected| {
+            let mut operands = vec![];
+            let mut collector = OperandCollector::new(&mut operands, allocatable, |vreg| vreg);
+            let limits = inst.register_limits();
+            inst.visit(&mut RegallocVisitor {
+                collector: &mut collector,
+                limits,
+            });
+            collector.finish();
+            let constraints: Vec<_> = operands.iter().map(|op| op.constraint()).collect();
+            assert_eq!(constraints, expected);
+        };
+
+        check(
+            super::asm::inst::adcq_mr::<CraneliftRegisters>::new(pair, src).into(),
+            vec![
+                OperandConstraint::Limit(16),
+                OperandConstraint::Reuse(0),
+                OperandConstraint::Limit(16),
+            ],
+        );
+        check(
+            super::asm::inst::addq_mr::<CraneliftRegisters>::new(pair, src).into(),
+            vec![
+                OperandConstraint::Reg,
+                OperandConstraint::Reuse(0),
+                OperandConstraint::Reg,
+            ],
+        );
     }
 }

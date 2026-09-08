@@ -1214,7 +1214,8 @@ fn x64_get_operands(inst: &mut Inst, collector: &mut impl OperandVisitor) {
         Inst::SequencePoint { .. } => {}
 
         Inst::External { inst } => {
-            inst.visit(&mut external::RegallocVisitor { collector });
+            let limits = inst.register_limits();
+            inst.visit(&mut external::RegallocVisitor { collector, limits });
         }
     }
 }

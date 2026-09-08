@@ -91,6 +91,22 @@ impl Encoding {
         }
     }
 
+    /// Return the exclusive upper bound for GPR hardware encodings.
+    pub fn gpr_register_limit(&self) -> usize {
+        match self {
+            Encoding::Rex(rex) if rex.rex2 => 32,
+            Encoding::Evex(evex) if evex.apx.is_some() => 32,
+            Encoding::Rex(_) | Encoding::Vex(_) | Encoding::Evex(_) => 16,
+        }
+    }
+
+    /// Return the exclusive upper bound for XMM hardware encodings.
+    pub fn xmm_register_limit(&self) -> usize {
+        // Standard EVEX can architecturally encode XMM16-XMM31, but the
+        // assembler's Xmm type does not support those registers yet.
+        16
+    }
+
     /// Return whether this encoding sets the APX `ND` ("new data destination")
     /// bit, meaning the architectural destination is the `vvvv`-encoded
     /// register rather than an operand named by ModRM.

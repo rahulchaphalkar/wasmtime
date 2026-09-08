@@ -85,8 +85,8 @@ fn generate_inst_impls(f: &mut Formatter, insts: &[dsl::Inst]) {
         f.add_block("pub fn features(&self) -> &'static Features", |f| {
             match_variants(f, insts, "features()");
         });
-        f.add_block("pub fn num_registers_available(&self) -> usize", |f| {
-            match_variants(f, insts, "num_registers_available()");
+        f.add_block("pub fn register_limits(&self) -> RegisterLimits", |f| {
+            match_variants(f, insts, "register_limits()");
         });
     });
 }

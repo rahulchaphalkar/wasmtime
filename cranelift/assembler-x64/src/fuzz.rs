@@ -660,7 +660,7 @@ mod test {
         use crate::inst::addq_mr;
 
         let inst = addq_mr::<FuzzRegs>::new(FuzzReg::new(17), FuzzReg::new(16));
-        assert_eq!(inst.num_registers_available(), 32);
+        assert_eq!(inst.register_limits(), crate::RegisterLimits::new(32, 16));
         assert_eq!(inst.to_string(), "addq %r16, %r17");
         let assembled = assemble(&inst.into());
         assert_eq!(pretty_print_hexadecimal(&assembled), "D55801C1");

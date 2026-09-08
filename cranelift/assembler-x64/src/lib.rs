@@ -72,7 +72,8 @@ pub mod fuzz;
 pub use inst::Inst;
 
 pub use api::{
-    AsReg, CodeSink, Constant, KnownOffset, Label, RegisterVisitor, Registers, TrapCode,
+    AsReg, CodeSink, Constant, KnownOffset, Label, RegisterLimits, RegisterVisitor, Registers,
+    TrapCode,
 };
 pub use features::{AvailableFeatures, Feature, Features};
 pub use fixed::Fixed;
