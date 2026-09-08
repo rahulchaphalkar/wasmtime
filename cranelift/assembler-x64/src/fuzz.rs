@@ -665,4 +665,38 @@ mod test {
         let assembled = assemble(&inst.into());
         assert_eq!(pretty_print_hexadecimal(&assembled), "D55801C1");
     }
+
+    #[test]
+    fn apx_movq_rex2_encodings() {
+        use crate::inst::{movq_mr, movq_rm};
+        use crate::mem::{Amode, AmodeOffset, AmodeOffsetPlusKnownOffset, GprMem};
+
+        let copy = movq_mr::<FuzzRegs>::new(FuzzReg::new(17), FuzzReg::new(16));
+        assert_eq!(copy.register_limits(), crate::RegisterLimits::new(32, 16));
+        assert_eq!(
+            pretty_print_hexadecimal(&assemble(&copy.into())),
+            "D55889C1"
+        );
+
+        let mem = || {
+            GprMem::Mem(Amode::ImmReg {
+                base: FuzzReg::new(17),
+                simm32: AmodeOffsetPlusKnownOffset {
+                    simm32: AmodeOffset::new(0x20),
+                    offset: None,
+                },
+                trap: None,
+            })
+        };
+        let store = movq_mr::<FuzzRegs>::new(mem(), FuzzReg::new(16));
+        assert_eq!(
+            pretty_print_hexadecimal(&assemble(&store.into())),
+            "D558894120"
+        );
+        let load = movq_rm::<FuzzRegs>::new(FuzzReg::new(16), mem());
+        assert_eq!(
+            pretty_print_hexadecimal(&assemble(&load.into())),
+            "D5588B4120"
+        );
+    }
 }
